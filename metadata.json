@@ -1,0 +1,6 @@
+{
+  "name": "SIAS SMPN 2 Kota Sukabumi",
+  "description": "Sistem Informasi & Administrasi Sekolah Digital SMP Negeri 2 Kota Sukabumi, Jl. Ir. H. Juanda No. 14 Cikole Kota Sukabumi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
