@@ -1,5 +1,6 @@
 import React from 'react';
-import { ActiveTab, ProfilSekolahData } from '../types';
+import { ActiveTab, ProfilSekolahData, CustomMenu } from '../types';
+import { getCustomMenuIcon } from '../utils/customIconHelper';
 import {
   LayoutDashboard,
   School,
@@ -15,7 +16,9 @@ import {
   MapPin,
   Lock,
   ShieldCheck,
-  Edit3
+  Edit3,
+  Plus,
+  Settings
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,6 +31,9 @@ interface SidebarProps {
   onOpenLogin: () => void;
   onLogout: () => void;
   onOpenEditProfil: () => void;
+  customMenus: CustomMenu[];
+  onOpenAddCustomMenu: () => void;
+  onOpenEditCustomMenu: (menu: CustomMenu) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -39,7 +45,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isAdmin,
   onOpenLogin,
   onLogout,
-  onOpenEditProfil
+  onOpenEditProfil,
+  customMenus,
+  onOpenAddCustomMenu,
+  onOpenEditCustomMenu
 }) => {
   const menuItems = [
     { id: 'dashboard' as ActiveTab, label: 'Dashboard Utama', icon: LayoutDashboard, adminOnly: false },
@@ -141,6 +150,77 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               );
             })}
+
+            {/* Custom Menus Section */}
+            <div className="pt-3 mt-2 border-t border-slate-100 flex flex-col gap-1">
+              <div className="px-3 flex items-center justify-between text-[11px] font-semibold tracking-wider text-slate-400 uppercase mb-1">
+                <span>Menu Kustom ({customMenus.length})</span>
+                {isAdmin ? (
+                  <button
+                    onClick={onOpenAddCustomMenu}
+                    className="text-[10px] text-blue-700 hover:text-blue-800 font-bold flex items-center gap-0.5 cursor-pointer"
+                    title="Tambah tombol menu baru"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Tambah</span>
+                  </button>
+                ) : (
+                  <span className="text-[9px] text-slate-400 font-normal">Kustom</span>
+                )}
+              </div>
+
+              {customMenus.map((custom) => {
+                const CustomIcon = getCustomMenuIcon(custom.iconName);
+                const isActive = activeTab === custom.id;
+                const isLocked = custom.adminOnly && !isAdmin;
+
+                return (
+                  <div key={custom.id} className="relative group/custom flex items-center">
+                    <button
+                      onClick={() => handleSelect(custom.id, custom.adminOnly)}
+                      className={`flex-1 flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-left transition-colors whitespace-nowrap cursor-pointer ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700 font-semibold'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <CustomIcon className={`w-4 h-4 shrink-0 ${isActive ? 'text-blue-700' : 'text-slate-400'}`} />
+                        <span className="truncate">{custom.label}</span>
+                      </div>
+
+                      {isLocked && (
+                        <span title="Perlu password admin">
+                          <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                        </span>
+                      )}
+                    </button>
+
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenEditCustomMenu(custom);
+                        }}
+                        title="Pengaturan Menu Ini"
+                        className="opacity-0 group-hover/custom:opacity-100 absolute right-2 p-1 text-slate-400 hover:text-blue-700 hover:bg-slate-100 rounded transition-opacity cursor-pointer"
+                      >
+                        <Settings className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Add Custom Menu Shortcut Button */}
+              <button
+                onClick={isAdmin ? onOpenAddCustomMenu : onOpenLogin}
+                className="mt-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 text-[11px] font-semibold text-slate-600 hover:text-blue-700 transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Tambah Tombol Menu</span>
+              </button>
+            </div>
           </nav>
         </div>
 

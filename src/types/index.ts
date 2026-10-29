@@ -1,4 +1,4 @@
-export type ActiveTab = 
+export type StandardTab = 
   | 'dashboard'
   | 'profil'
   | 'kesiswaan'
@@ -10,6 +10,45 @@ export type ActiveTab =
   | 'drive'
   | 'keuangan'
   | 'agenda';
+
+export type ActiveTab = StandardTab | (string & {});
+
+export interface CustomMenu {
+  id: string; // e.g. "menu-galeri-kegiatan"
+  label: string; // e.g. "Galeri Video & Kegiatan"
+  deskripsi?: string;
+  iconName: string; // e.g. "Video", "Film", "Image", "Link", "Globe", "Sparkles", "Folder", "Tv", "Trophy"
+  adminOnly: boolean;
+  order: number;
+  createdAt: string;
+}
+
+export type CustomItemType = 'video' | 'gambar' | 'tautan';
+
+export interface CustomMenuItem {
+  id: string;
+  menuId: string;
+  tipe: CustomItemType;
+  judul: string;
+  deskripsi: string;
+  kategori?: string;
+  
+  // For 'video'
+  videoUrl?: string; // direct mp4 / data url or youtube / drive link
+  videoEmbedUrl?: string; // iframe embed URL if YouTube or Google Drive
+  videoDuration?: string;
+  
+  // For 'gambar'
+  gambarUrl?: string; // direct url or data url
+  caption?: string;
+  
+  // For 'tautan'
+  tautanUrl?: string;
+  tautanLabel?: string;
+  
+  tanggal: string;
+  uploader: string;
+}
 
 export interface DokumenSekolah {
   id: string;

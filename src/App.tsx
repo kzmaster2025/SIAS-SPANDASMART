@@ -13,7 +13,9 @@ import {
   AgendaSekolah,
   RaporSiswa,
   DokumenSekolah,
-  ProfilSekolahData
+  ProfilSekolahData,
+  CustomMenu,
+  CustomMenuItem
 } from './types';
 import {
   INITIAL_SISWA,
@@ -24,6 +26,10 @@ import {
   INITIAL_DOKUMEN,
   PROFIL_SEKOLAH
 } from './data/mockData';
+import {
+  INITIAL_CUSTOM_MENUS,
+  INITIAL_CUSTOM_ITEMS
+} from './data/mockCustomData';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ProfileSekolah } from './components/ProfileSekolah';
@@ -37,6 +43,9 @@ import { PanelKelolaDokumen } from './components/PanelKelolaDokumen';
 import { GoogleDriveSekolah } from './components/GoogleDriveSekolah';
 import { AdministrasiKeuangan } from './components/AdministrasiKeuangan';
 import { AgendaPengumuman } from './components/AgendaPengumuman';
+import { CustomMenuPage } from './components/CustomMenuPage';
+import { CustomMenuModal } from './components/CustomMenuModal';
+import { CustomItemUploadModal } from './components/CustomItemUploadModal';
 import { KartuPelajarModal } from './components/KartuPelajarModal';
 import { CetakSuratModal } from './components/CetakSuratModal';
 import { CetakRaporModal } from './components/CetakRaporModal';
@@ -98,6 +107,34 @@ export default function App() {
   const [dokumenList, setDokumenList] = useState<DokumenSekolah[]>(INITIAL_DOKUMEN);
   const [transaksiList, setTransaksiList] = useState<TransaksiKeuangan[]>(INITIAL_TRANSAKSI);
   const [agendaList, setAgendaList] = useState<AgendaSekolah[]>(INITIAL_AGENDA);
+
+  // Custom Menus & Multimedia/Links Stores
+  const [customMenus, setCustomMenus] = useState<CustomMenu[]>(() => {
+    try {
+      const saved = localStorage.getItem('sias_custom_menus');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Gagal memuat cache menu kustom:', e);
+    }
+    return INITIAL_CUSTOM_MENUS;
+  });
+
+  const [customMenuItems, setCustomMenuItems] = useState<CustomMenuItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('sias_custom_items');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Gagal memuat cache konten menu kustom:', e);
+    }
+    return INITIAL_CUSTOM_ITEMS;
+  });
+
+  // Modals for Custom Menu & Uploads
+  const [isCustomMenuModalOpen, setIsCustomMenuModalOpen] = useState(false);
+  const [editingCustomMenu, setEditingCustomMenu] = useState<CustomMenu | null>(null);
+  const [isUploadItemModalOpen, setIsUploadItemModalOpen] = useState(false);
+  const [uploadItemMenuId, setUploadItemMenuId] = useState<string | null>(null);
+  const [editingCustomItem, setEditingCustomItem] = useState<CustomMenuItem | null>(null);
 
   // Modals for Printing & Preview
   const [selectedStudentForCard, setSelectedStudentForCard] = useState<Siswa | null>(null);
@@ -242,7 +279,70 @@ export default function App() {
     setAgendaList(prev => [ag, ...prev]);
   };
 
+  // Custom Menu Handlers
+  const saveCustomMenusToStorage = (menus: CustomMenu[]) => {
+    try {
+      localStorage.setItem('sias_custom_menus', JSON.stringify(menus));
+    } catch (e) {
+      console.warn('Gagal menyimpan menu kustom ke local storage', e);
+    }
+  };
+
+  const saveCustomItemsToStorage = (items: CustomMenuItem[]) => {
+    try {
+      localStorage.setItem('sias_custom_items', JSON.stringify(items));
+    } catch (e) {
+      console.warn('Gagal menyimpan konten menu kustom ke local storage', e);
+    }
+  };
+
+  const handleSaveCustomMenu = (menu: CustomMenu) => {
+    setCustomMenus(prev => {
+      const exists = prev.some(m => m.id === menu.id);
+      const updated = exists ? prev.map(m => m.id === menu.id ? menu : m) : [...prev, menu];
+      saveCustomMenusToStorage(updated);
+      return updated;
+    });
+    setActiveTab(menu.id);
+  };
+
+  const handleDeleteCustomMenu = (id: string) => {
+    setCustomMenus(prev => {
+      const updated = prev.filter(m => m.id !== id);
+      saveCustomMenusToStorage(updated);
+      return updated;
+    });
+    setCustomMenuItems(prev => {
+      const updated = prev.filter(i => i.menuId !== id);
+      saveCustomItemsToStorage(updated);
+      return updated;
+    });
+    if (activeTab === id) {
+      setActiveTab('profil');
+    }
+  };
+
+  const handleSaveCustomItem = (item: CustomMenuItem) => {
+    setCustomMenuItems(prev => {
+      const exists = prev.some(i => i.id === item.id);
+      const updated = exists ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
+      saveCustomItemsToStorage(updated);
+      return updated;
+    });
+  };
+
+  const handleDeleteCustomItem = (id: string) => {
+    setCustomMenuItems(prev => {
+      const updated = prev.filter(i => i.id !== id);
+      saveCustomItemsToStorage(updated);
+      return updated;
+    });
+  };
+
   const getBreadcrumbTitle = () => {
+    const customMatch = customMenus.find(m => m.id === activeTab);
+    if (customMatch) return customMatch.label;
+
     switch (activeTab) {
       case 'dashboard': return 'Dashboard Utama';
       case 'profil': return 'Profil Lembaga & Fasilitas';
@@ -255,7 +355,7 @@ export default function App() {
       case 'drive': return 'Google Drive Sekolah & Cloud';
       case 'keuangan': return 'Buku Kas Umum BOS & Komite';
       case 'agenda': return 'Agenda & Pengumuman';
-      default: return '';
+      default: return 'Portal Administrasi';
     }
   };
 
@@ -300,6 +400,15 @@ export default function App() {
           }}
           onLogout={handleLogout}
           onOpenEditProfil={() => setIsEditProfilModalOpen(true)}
+          customMenus={customMenus}
+          onOpenAddCustomMenu={() => {
+            setEditingCustomMenu(null);
+            setIsCustomMenuModalOpen(true);
+          }}
+          onOpenEditCustomMenu={(menu) => {
+            setEditingCustomMenu(menu);
+            setIsCustomMenuModalOpen(true);
+          }}
         />
 
         {/* Content Viewport */}
@@ -429,8 +538,64 @@ export default function App() {
               onAddAgenda={handleAddAgenda}
             />
           )}
+
+          {/* Dynamic Custom Menu Pages (Videos, Images, and Links) */}
+          {(() => {
+            const activeCustom = customMenus.find(m => m.id === activeTab);
+            if (!activeCustom) return null;
+            return (
+              <CustomMenuPage
+                menu={activeCustom}
+                items={customMenuItems}
+                isAdmin={isAdmin}
+                onOpenEditMenu={(menu) => {
+                  setEditingCustomMenu(menu);
+                  setIsCustomMenuModalOpen(true);
+                }}
+                onOpenAddItem={(menuId) => {
+                  setUploadItemMenuId(menuId);
+                  setEditingCustomItem(null);
+                  setIsUploadItemModalOpen(true);
+                }}
+                onOpenEditItem={(item) => {
+                  setUploadItemMenuId(item.menuId);
+                  setEditingCustomItem(item);
+                  setIsUploadItemModalOpen(true);
+                }}
+                onDeleteItem={handleDeleteCustomItem}
+                onOpenAdminLogin={() => {
+                  setLoginModalMode('login');
+                  setIsLoginModalOpen(true);
+                }}
+              />
+            );
+          })()}
         </main>
       </div>
+
+      {/* Custom Menu Modal (Tambah / Edit Tombol Menu Sidebar) */}
+      <CustomMenuModal
+        isOpen={isCustomMenuModalOpen}
+        onClose={() => setIsCustomMenuModalOpen(false)}
+        editingMenu={editingCustomMenu}
+        onSaveMenu={handleSaveCustomMenu}
+        onDeleteMenu={handleDeleteCustomMenu}
+      />
+
+      {/* Custom Item Upload Modal (Upload Video, Gambar, Tautan) */}
+      <CustomItemUploadModal
+        isOpen={isUploadItemModalOpen}
+        onClose={() => {
+          setIsUploadItemModalOpen(false);
+          setEditingCustomItem(null);
+          setUploadItemMenuId(null);
+        }}
+        menuId={uploadItemMenuId || customMenus[0]?.id || ''}
+        menuLabel={customMenus.find(m => m.id === uploadItemMenuId)?.label || 'Menu Kustom'}
+        editingItem={editingCustomItem}
+        onSaveItem={handleSaveCustomItem}
+        onDeleteItem={handleDeleteCustomItem}
+      />
 
       {/* Admin Modals */}
       <AdminLoginModal
