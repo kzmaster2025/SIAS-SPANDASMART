@@ -134,3 +134,48 @@ export interface AgendaSekolah {
   penanggungJawab: string;
   status: 'Akan Datang' | 'Sedang Berjalan' | 'Selesai';
 }
+
+export interface ProfilSekolahData {
+  nama: string;
+  sebutan: string;
+  npsn: string;
+  nss: string;
+  statusSekolah: string;
+  bentukPendidikan: string;
+  akreditasi: string;
+  nilaiAkreditasi: number;
+  noSkAkreditasi: string;
+  kurikulum: string;
+  tahunBerdiri: string;
+  skPendirian: string;
+  alamat: string;
+  kodePos: string;
+  telepon: string;
+  email: string;
+  website: string;
+  dinas: string;
+  provinsi: string;
+  koordinat: string;
+  logoUrl?: string;
+  heroImage: string;
+  labImage: string;
+  kepalaSekolah: {
+    nama: string;
+    nip: string;
+    pangkat: string;
+    foto: string;
+    sambutan: string;
+  };
+  visi: string;
+  misi: string[];
+  fasilitas: { nama: string; kapasitas: string; status: string }[];
+  statistikUmum?: {
+    totalSiswa: number;
+    totalRombel: number;
+    totalGuru: number;
+    totalTendik: number;
+    siswaLaki: number;
+    siswaPerempuan: number;
+  };
+}
+

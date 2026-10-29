@@ -1,14 +1,22 @@
-import React from 'react';
-import { SuratResmi } from '../types';
+import { SuratResmi, ProfilSekolahData } from '../types';
 import { X, Printer, CheckCircle2, QrCode } from 'lucide-react';
 
 interface CetakSuratModalProps {
   surat: SuratResmi | null;
   onClose: () => void;
+  profil?: ProfilSekolahData;
 }
 
-export const CetakSuratModal: React.FC<CetakSuratModalProps> = ({ surat, onClose }) => {
+export const CetakSuratModal: React.FC<CetakSuratModalProps> = ({ surat, onClose, profil }) => {
   if (!surat) return null;
+
+  const namaSekolah = profil?.nama || 'SMP NEGERI 2 KOTA SUKABUMI';
+  const alamatSekolah = profil?.alamat || 'Jl. Ir. H. Juanda No. 14 Cikole Kota Sukabumi 43113';
+  const telepon = profil?.telepon || '(0266) 221584';
+  const email = profil?.email || 'info@smpn2kotasukabumi.sch.id';
+  const website = profil?.website?.replace(/^https?:\/\//, '') || 'smpn2kotasukabumi.sch.id';
+  const kepalaNama = profil?.kepalaSekolah?.nama || 'H. Yusuf Hidayat, M.Pd.';
+  const kepalaNip = profil?.kepalaSekolah?.nip || '19680512 199412 1 002';
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -26,22 +34,31 @@ export const CetakSuratModal: React.FC<CetakSuratModalProps> = ({ surat, onClose
         {/* Lembar Surat Dinas A4 */}
         <div className="p-8 border border-slate-300 rounded-lg bg-white text-slate-900 font-serif leading-relaxed text-xs">
           {/* KOP SURAT RESMI */}
-          <div className="text-center pb-3 border-b-4 border-double border-slate-900">
-            <h4 className="font-sans text-xs tracking-widest font-semibold uppercase text-slate-700">
-              PEMERINTAH KOTA SUKABUMI
-            </h4>
-            <h3 className="font-sans text-sm tracking-wider font-bold uppercase text-slate-800">
-              DINAS PENDIDIKAN DAN KEBUDAYAAN
-            </h3>
-            <h2 className="font-sans text-base sm:text-lg font-black tracking-tight uppercase text-blue-950">
-              SMP NEGERI 2 KOTA SUKABUMI
-            </h2>
-            <p className="font-sans text-[11px] text-slate-600">
-              Jl. Ir. H. Juanda No. 14 Cikole Kota Sukabumi 43113 · Telp. (0266) 221584
-            </p>
-            <p className="font-sans text-[10px] text-slate-500 font-mono">
-              Website: smpn2kotasukabumi.sch.id · Pos-el: info@smpn2kotasukabumi.sch.id
-            </p>
+          <div className="pb-3 border-b-4 border-double border-slate-900 flex items-center justify-center gap-4 text-center">
+            {profil?.logoUrl && (
+              <img
+                src={profil.logoUrl}
+                alt="Logo Sekolah"
+                className="w-16 h-16 object-contain shrink-0"
+              />
+            )}
+            <div className="flex-1">
+              <h4 className="font-sans text-xs tracking-widest font-semibold uppercase text-slate-700">
+                PEMERINTAH KOTA SUKABUMI
+              </h4>
+              <h3 className="font-sans text-sm tracking-wider font-bold uppercase text-slate-800">
+                DINAS PENDIDIKAN DAN KEBUDAYAAN
+              </h3>
+              <h2 className="font-sans text-base sm:text-lg font-black tracking-tight uppercase text-blue-950">
+                {namaSekolah}
+              </h2>
+              <p className="font-sans text-[11px] text-slate-600">
+                {alamatSekolah} · Telp. {telepon}
+              </p>
+              <p className="font-sans text-[10px] text-slate-500 font-mono">
+                Website: {website} · Pos-el: {email}
+              </p>
+            </div>
           </div>
 
           {/* Nomor & Perihal */}
@@ -136,9 +153,9 @@ export const CetakSuratModal: React.FC<CetakSuratModalProps> = ({ surat, onClose
                   ★ DINAS DIKBUD KOTA SUKABUMI ★<br />SMP NEGERI 2
                 </div>
               </div>
-              <p className="font-bold underline text-slate-900 text-sm">H. Yusuf Hidayat, M.Pd.</p>
-              <p className="text-[11px] font-mono text-slate-600">NIP 19680512 199412 1 002</p>
-              <p className="text-[10px] text-slate-500">Pembina Utama Muda, IV/c</p>
+              <p className="font-bold underline text-slate-900 text-sm">{kepalaNama}</p>
+              <p className="text-[11px] font-mono text-slate-600">NIP {kepalaNip}</p>
+              <p className="text-[10px] text-slate-500">{profil?.kepalaSekolah?.pangkat || 'Pembina Utama Muda, IV/c'}</p>
             </div>
           </div>
         </div>

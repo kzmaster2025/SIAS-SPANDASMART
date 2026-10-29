@@ -3,8 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { ActiveTab, Siswa, GuruTendik, SuratResmi, TransaksiKeuangan, AgendaSekolah, RaporSiswa, DokumenSekolah } from './types';
+import React, { useState, useEffect } from 'react';
+import {
+  ActiveTab,
+  Siswa,
+  GuruTendik,
+  SuratResmi,
+  TransaksiKeuangan,
+  AgendaSekolah,
+  RaporSiswa,
+  DokumenSekolah,
+  ProfilSekolahData
+} from './types';
 import {
   INITIAL_SISWA,
   INITIAL_GURU,
@@ -12,7 +22,6 @@ import {
   INITIAL_TRANSAKSI,
   INITIAL_AGENDA,
   INITIAL_DOKUMEN,
-  MOCK_RAPOR_CONTOH,
   PROFIL_SEKOLAH
 } from './data/mockData';
 import { Header } from './components/Header';
@@ -32,11 +41,47 @@ import { KartuPelajarModal } from './components/KartuPelajarModal';
 import { CetakSuratModal } from './components/CetakSuratModal';
 import { CetakRaporModal } from './components/CetakRaporModal';
 import { PreviewDokumenModal } from './components/PreviewDokumenModal';
-import { Menu, ChevronRight } from 'lucide-react';
+import { EditProfilModal } from './components/EditProfilModal';
+import { AdminLoginModal } from './components/AdminLoginModal';
+import { Menu, ChevronRight, Lock } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('profil');
   const [isOpenMobile, setIsOpenMobile] = useState<boolean>(false);
+
+  // School Profile Store with LocalStorage Persistence
+  const [profilSekolah, setProfilSekolah] = useState<ProfilSekolahData>(() => {
+    try {
+      const saved = localStorage.getItem('sias_profil_sekolah');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Gagal memuat profil sekolah dari cache local', e);
+    }
+    return PROFIL_SEKOLAH as unknown as ProfilSekolahData;
+  });
+
+  // Admin Authentication State
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sias_is_admin') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [adminPassword, setAdminPassword] = useState<string>(() => {
+    try {
+      return localStorage.getItem('sias_admin_password') || 'admin123';
+    } catch {
+      return 'admin123';
+    }
+  });
+
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loginModalMode, setLoginModalMode] = useState<'login' | 'change_password'>('login');
+  const [isEditProfilModalOpen, setIsEditProfilModalOpen] = useState(false);
 
   // Core Data Stores
   const [siswaList, setSiswaList] = useState<Siswa[]>(INITIAL_SISWA);
@@ -51,6 +96,53 @@ export default function App() {
   const [selectedSuratForPrint, setSelectedSuratForPrint] = useState<SuratResmi | null>(null);
   const [selectedRaporForPrint, setSelectedRaporForPrint] = useState<{ rapor: RaporSiswa; siswa: Siswa } | null>(null);
   const [selectedDokumenForPreview, setSelectedDokumenForPreview] = useState<DokumenSekolah | null>(null);
+
+  // Auth Handlers
+  const handleSuccessLogin = () => {
+    setIsAdmin(true);
+    try {
+      localStorage.setItem('sias_is_admin', 'true');
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAdmin(false);
+    try {
+      localStorage.setItem('sias_is_admin', 'false');
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleUpdatePassword = (newPass: string) => {
+    setAdminPassword(newPass);
+    try {
+      localStorage.setItem('sias_admin_password', newPass);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  // Profile Handlers
+  const handleSaveProfil = (updated: ProfilSekolahData) => {
+    setProfilSekolah(updated);
+    try {
+      localStorage.setItem('sias_profil_sekolah', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Gagal menyimpan profil ke local storage', e);
+    }
+  };
+
+  const handleResetDefaultProfil = () => {
+    try {
+      localStorage.removeItem('sias_profil_sekolah');
+    } catch (e) {
+      console.warn(e);
+    }
+    setProfilSekolah(PROFIL_SEKOLAH as unknown as ProfilSekolahData);
+  };
 
   // Student Handlers
   const handleAddSiswa = (siswa: Siswa) => {
@@ -125,7 +217,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
-      {/* Top Bar following contract */}
+      {/* Top Header */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -134,6 +226,18 @@ export default function App() {
             setSelectedSuratForPrint(suratList[0]);
           }
         }}
+        profil={profilSekolah}
+        isAdmin={isAdmin}
+        onOpenLogin={() => {
+          setLoginModalMode('login');
+          setIsLoginModalOpen(true);
+        }}
+        onLogout={handleLogout}
+        onOpenChangePassword={() => {
+          setLoginModalMode('change_password');
+          setIsLoginModalOpen(true);
+        }}
+        onOpenEditProfil={() => setIsEditProfilModalOpen(true)}
       />
 
       {/* Main Administrative Container */}
@@ -144,6 +248,14 @@ export default function App() {
           setActiveTab={setActiveTab}
           isOpenMobile={isOpenMobile}
           setIsOpenMobile={setIsOpenMobile}
+          profil={profilSekolah}
+          isAdmin={isAdmin}
+          onOpenLogin={() => {
+            setLoginModalMode('login');
+            setIsLoginModalOpen(true);
+          }}
+          onLogout={handleLogout}
+          onOpenEditProfil={() => setIsEditProfilModalOpen(true)}
         />
 
         {/* Content Viewport */}
@@ -158,15 +270,15 @@ export default function App() {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <span className="font-medium text-slate-800">SMPN 2 Sukabumi</span>
+              <span className="font-medium text-slate-800">{profilSekolah.sebutan || 'SMPN 2 Sukabumi'}</span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               <span className="text-blue-700 font-semibold">{getBreadcrumbTitle()}</span>
             </div>
 
             <div className="hidden sm:flex items-center gap-3 text-xs text-slate-500 font-mono">
-              <span>Jl. Ir. H. Juanda No. 14 Cikole</span>
+              <span className="truncate max-w-xs">{profilSekolah.alamat.split(',')[0]}</span>
               <span aria-hidden="true">·</span>
-              <span className="text-emerald-700 font-medium">Akreditasi A</span>
+              <span className="text-emerald-700 font-medium">Akreditasi {profilSekolah.akreditasi}</span>
             </div>
           </div>
 
@@ -186,7 +298,16 @@ export default function App() {
           )}
 
           {activeTab === 'profil' && (
-            <ProfileSekolah onNavigateToTab={(tab) => setActiveTab(tab)} />
+            <ProfileSekolah
+              onNavigateToTab={(tab) => setActiveTab(tab)}
+              profil={profilSekolah}
+              isAdmin={isAdmin}
+              onOpenEdit={() => setIsEditProfilModalOpen(true)}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
+            />
           )}
 
           {activeTab === 'kesiswaan' && (
@@ -238,6 +359,11 @@ export default function App() {
               onPreviewDokumen={(doc) => setSelectedDokumenForPreview(doc)}
               onNavigateToDrive={() => setActiveTab('drive')}
               onUploadToDrive={() => setActiveTab('drive')}
+              isAdmin={isAdmin}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
             />
           )}
 
@@ -261,6 +387,24 @@ export default function App() {
         </main>
       </div>
 
+      {/* Admin Modals */}
+      <AdminLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onSuccessLogin={handleSuccessLogin}
+        currentPassword={adminPassword}
+        onUpdatePassword={handleUpdatePassword}
+        initialMode={loginModalMode}
+      />
+
+      <EditProfilModal
+        isOpen={isEditProfilModalOpen}
+        onClose={() => setIsEditProfilModalOpen(false)}
+        profilData={profilSekolah}
+        onSave={handleSaveProfil}
+        onResetDefault={handleResetDefaultProfil}
+      />
+
       {/* Printable & Preview Modals */}
       <KartuPelajarModal
         siswa={selectedStudentForCard}
@@ -270,6 +414,7 @@ export default function App() {
       <CetakSuratModal
         surat={selectedSuratForPrint}
         onClose={() => setSelectedSuratForPrint(null)}
+        profil={profilSekolah}
       />
 
       <CetakRaporModal

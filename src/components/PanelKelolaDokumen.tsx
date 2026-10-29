@@ -30,6 +30,8 @@ interface PanelKelolaDokumenProps {
   onPreviewDokumen: (dokumen: DokumenSekolah) => void;
   onNavigateToDrive?: () => void;
   onUploadToDrive?: (doc: DokumenSekolah) => void;
+  isAdmin?: boolean;
+  onOpenAdminLogin?: () => void;
 }
 
 export const PanelKelolaDokumen: React.FC<PanelKelolaDokumenProps> = ({
@@ -39,7 +41,9 @@ export const PanelKelolaDokumen: React.FC<PanelKelolaDokumenProps> = ({
   onDeleteDokumen,
   onPreviewDokumen,
   onNavigateToDrive,
-  onUploadToDrive
+  onUploadToDrive,
+  isAdmin = true,
+  onOpenAdminLogin
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKategori, setFilterKategori] = useState<string>('all');
@@ -102,6 +106,10 @@ export const PanelKelolaDokumen: React.FC<PanelKelolaDokumenProps> = ({
   const totalTerbatas = dokumenList.filter(d => d.akses === 'Terbatas Pimpinan & TU').length;
 
   const handleOpenAdd = () => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
     setEditingDokumen(null);
     setFormData({
       judul: '',
@@ -122,6 +130,10 @@ export const PanelKelolaDokumen: React.FC<PanelKelolaDokumenProps> = ({
   };
 
   const handleOpenEdit = (doc: DokumenSekolah) => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
     setEditingDokumen(doc);
     setFormData({ ...doc });
     setIsModalOpen(true);
