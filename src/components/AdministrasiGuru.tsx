@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { GuruTendik } from '../types';
 import {
   Search,
@@ -10,26 +11,33 @@ import {
   Edit2,
   Trash2,
   X,
-  Award
+  Award,
+  FileSpreadsheet,
+  Download,
+  Upload
 } from 'lucide-react';
+import { ImportGuruExcelModal } from './ImportGuruExcelModal';
 
 interface AdministrasiGuruProps {
   guruList: GuruTendik[];
   onAddGuru: (guru: GuruTendik) => void;
   onUpdateGuru: (guru: GuruTendik) => void;
   onDeleteGuru: (id: string) => void;
+  onBatchImportGuru?: (imported: GuruTendik[], mode: 'append' | 'replace') => void;
 }
 
 export const AdministrasiGuru: React.FC<AdministrasiGuruProps> = ({
   guruList,
   onAddGuru,
   onUpdateGuru,
-  onDeleteGuru
+  onDeleteGuru,
+  onBatchImportGuru
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKategori, setFilterKategori] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingGuru, setEditingGuru] = useState<GuruTendik | null>(null);
 
   const [formData, setFormData] = useState<Partial<GuruTendik>>({
@@ -108,10 +116,65 @@ export const AdministrasiGuru: React.FC<AdministrasiGuruProps> = ({
     setIsModalOpen(false);
   };
 
+  const handleExportToExcel = () => {
+    const exportData = filteredGuru.map((g, index) => ({
+      No: index + 1,
+      'Nama Lengkap': g.nama,
+      Gelar: g.gelar || '',
+      NIP: g.nip,
+      NUPTK: g.nuptk,
+      Jabatan: g.jabatan,
+      Kategori: g.kategori,
+      'Status Kepegawaian': g.statusKepegawaian,
+      Golongan: g.golongan || '-',
+      'Mata Pelajaran': g.mapel || '-',
+      'Jam Mengajar': g.jamMengajar || 0,
+      Email: g.email,
+      Telepon: g.telepon,
+      'Pendidikan Terakhir': g.pendidikanTerakhir
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws['!cols'] = [
+      { wch: 5 },
+      { wch: 26 },
+      { wch: 12 },
+      { wch: 22 },
+      { wch: 20 },
+      { wch: 32 },
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 14 },
+      { wch: 32 },
+      { wch: 16 },
+      { wch: 30 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Data_GTK_SMPN2');
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Data_GTK_SMPN2_Kota_Sukabumi_${today}.xlsx`);
+  };
+
+  const handleImportSuccess = (imported: GuruTendik[], mode: 'append' | 'replace') => {
+    if (onBatchImportGuru) {
+      onBatchImportGuru(imported, mode);
+    } else {
+      // Fallback
+      if (mode === 'replace') {
+        imported.forEach(g => onAddGuru(g));
+      } else {
+        imported.forEach(g => onAddGuru(g));
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
             <span>Kepegawaian & GTK</span>
@@ -120,21 +183,51 @@ export const AdministrasiGuru: React.FC<AdministrasiGuruProps> = ({
             <span aria-hidden="true">·</span>
             <span>SMP Negeri 2 Kota Sukabumi</span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Pendidik & Tenaga Kependidikan
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <span>Pendidik & Tenaga Kependidikan</span>
+            <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+              SIAS GTK
+            </span>
           </h1>
           <p className="text-xs text-slate-600 mt-0.5">
             Daftar profil pengajar, kualifikasi akademik, beban jam mengajar, dan staf Tata Usaha sekolah.
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah GTK Baru</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Excel Export Button */}
+          <button
+            type="button"
+            onClick={handleExportToExcel}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
+            title="Ekspor seluruh data GTK ke file Excel (.xlsx)"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Ekspor Excel</span>
+          </button>
+
+          {/* Excel Import Button */}
+          <button
+            type="button"
+            onClick={() => setIsImportModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-xs cursor-pointer"
+            title="Unggah dan impor data GTK dari berkas Excel (.xlsx / .xls / .csv)"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
+            <span>Impor dari Excel</span>
+          </button>
+
+          {/* Add Guru Manual Button */}
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah GTK Baru</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter & Search */}
@@ -428,6 +521,14 @@ export const AdministrasiGuru: React.FC<AdministrasiGuruProps> = ({
           </div>
         </div>
       )}
+
+      {/* Excel Import Modal */}
+      <ImportGuruExcelModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        existingGuruList={guruList}
+        onImportSuccess={handleImportSuccess}
+      />
     </div>
   );
 };

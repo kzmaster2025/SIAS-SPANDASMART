@@ -85,7 +85,15 @@ export default function App() {
 
   // Core Data Stores
   const [siswaList, setSiswaList] = useState<Siswa[]>(INITIAL_SISWA);
-  const [guruList, setGuruList] = useState<GuruTendik[]>(INITIAL_GURU);
+  const [guruList, setGuruList] = useState<GuruTendik[]>(() => {
+    try {
+      const saved = localStorage.getItem('sias_guru_list');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Gagal memuat cache data guru:', e);
+    }
+    return INITIAL_GURU;
+  });
   const [suratList, setSuratList] = useState<SuratResmi[]>(INITIAL_SURAT);
   const [dokumenList, setDokumenList] = useState<DokumenSekolah[]>(INITIAL_DOKUMEN);
   const [transaksiList, setTransaksiList] = useState<TransaksiKeuangan[]>(INITIAL_TRANSAKSI);
@@ -158,16 +166,52 @@ export default function App() {
   };
 
   // Guru Handlers
+  const saveGuruListToStorage = (list: GuruTendik[]) => {
+    try {
+      localStorage.setItem('sias_guru_list', JSON.stringify(list));
+    } catch (e) {
+      console.warn('Gagal menyimpan data GTK ke local storage', e);
+    }
+  };
+
   const handleAddGuru = (guru: GuruTendik) => {
-    setGuruList(prev => [guru, ...prev]);
+    setGuruList(prev => {
+      const updated = [guru, ...prev];
+      saveGuruListToStorage(updated);
+      return updated;
+    });
   };
 
   const handleUpdateGuru = (guru: GuruTendik) => {
-    setGuruList(prev => prev.map(g => g.id === guru.id ? guru : g));
+    setGuruList(prev => {
+      const updated = prev.map(g => g.id === guru.id ? guru : g);
+      saveGuruListToStorage(updated);
+      return updated;
+    });
   };
 
   const handleDeleteGuru = (id: string) => {
-    setGuruList(prev => prev.filter(g => g.id !== id));
+    setGuruList(prev => {
+      const updated = prev.filter(g => g.id !== id);
+      saveGuruListToStorage(updated);
+      return updated;
+    });
+  };
+
+  const handleBatchImportGuru = (imported: GuruTendik[], mode: 'append' | 'replace') => {
+    setGuruList(prev => {
+      let updated: GuruTendik[];
+      if (mode === 'replace') {
+        updated = [...imported];
+      } else {
+        // Mode append: hindari duplikasi ID
+        const existingIds = new Set(prev.map(g => g.id));
+        const filteredImport = imported.filter(g => !existingIds.has(g.id));
+        updated = [...filteredImport, ...prev];
+      }
+      saveGuruListToStorage(updated);
+      return updated;
+    });
   };
 
   // Surat Handlers
@@ -326,6 +370,7 @@ export default function App() {
               onAddGuru={handleAddGuru}
               onUpdateGuru={handleUpdateGuru}
               onDeleteGuru={handleDeleteGuru}
+              onBatchImportGuru={handleBatchImportGuru}
             />
           )}
 
