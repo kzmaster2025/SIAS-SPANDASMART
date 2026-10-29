@@ -32,7 +32,10 @@ import {
   HardDrive,
   LogOut,
   User as UserIcon,
-  ShieldCheck
+  ShieldCheck,
+  Copy,
+  Sparkles,
+  HelpCircle
 } from 'lucide-react';
 
 interface GoogleDriveSekolahProps {
@@ -409,17 +412,91 @@ ${doc.isiRingkasan}`;
           </div>
 
           {authError && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg text-left">
-              {authError}
-            </div>
+            authError.includes('unauthorized-domain') ? (
+              <div className="p-4 bg-amber-50/90 border border-amber-300 text-amber-950 text-xs rounded-xl text-left space-y-3 shadow-xs">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm">
+                      Domain Belum Diizinkan di Firebase Console (auth/unauthorized-domain)
+                    </h4>
+                    <p className="text-slate-700 mt-1 leading-relaxed">
+                      Karena website ini diakses dari domain <strong className="font-mono text-blue-700 bg-white px-1.5 py-0.5 rounded border border-slate-200">{typeof window !== 'undefined' ? window.location.hostname : 'domain Anda'}</strong>, Firebase membatasi login demi keamanan akun Google Anda sampai domain ini ditambahkan.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-white rounded-lg border border-amber-200 space-y-2 text-slate-700">
+                  <p className="font-semibold text-slate-900 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Langkah Mudah Memperbaiki (1 Menit):</span>
+                  </p>
+                  <ol className="list-decimal pl-5 space-y-1.5 leading-relaxed text-[11px]">
+                    <li>
+                      Buka Firebase Console Settings:{' '}
+                      <a
+                        href="https://console.firebase.google.com/project/gen-lang-client-0747928200/authentication/settings"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-700 font-bold underline inline-flex items-center gap-1 hover:text-blue-900"
+                      >
+                        <span>Buka Tab Authorized Domains di Firebase</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </li>
+                    <li>
+                      Di bagian <strong>Authorized domains</strong> (Domain yang diizinkan), klik tombol <strong>Add domain</strong> (Tambahkan domain).
+                    </li>
+                    <li>
+                      Ketik nama domain Anda:{' '}
+                      <code className="font-mono font-bold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                        {typeof window !== 'undefined' ? window.location.hostname : 'kzmaster2025.github.io'}
+                      </code>{' '}
+                      lalu klik <strong>Save (Simpan)</strong>.
+                    </li>
+                    <li>Setelah disimpan, tutup dan klik kembali tombol <strong>Sign in with Google</strong> di bawah!</li>
+                  </ol>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        navigator.clipboard.writeText(window.location.hostname);
+                        alert(`Domain "${window.location.hostname}" berhasil disalin!`);
+                      }
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Salin Nama Domain ({typeof window !== 'undefined' ? window.location.hostname : ''})</span>
+                  </button>
+
+                  <a
+                    href="https://console.firebase.google.com/project/gen-lang-client-0747928200/authentication/settings"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Buka Firebase Console</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg text-left">
+                {authError}
+              </div>
+            )
           )}
 
-          {/* Official Sign in with Google Button Styled as instructed in workspace-integration */}
-          <div className="flex flex-col items-center justify-center pt-2">
+          {/* Official Sign in with Google Button */}
+          <div className="flex flex-col items-center justify-center pt-2 space-y-3">
             <button
               onClick={handleSignIn}
               disabled={isLoggingIn}
-              className="inline-flex items-center gap-3 px-5 py-2.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:shadow-xs transition-all text-xs font-semibold text-slate-700 cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-3 px-6 py-2.5 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 hover:shadow-xs transition-all text-xs font-semibold text-slate-700 cursor-pointer disabled:opacity-50"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 48 48">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
@@ -429,7 +506,41 @@ ${doc.isiRingkasan}`;
               </svg>
               <span>{isLoggingIn ? 'Menghubungkan...' : 'Sign in with Google'}</span>
             </button>
-            <span className="text-[11px] text-slate-400 mt-2 font-mono">
+
+            {/* Simulation demo button if domain not yet verified */}
+            <button
+              type="button"
+              onClick={() => {
+                const demoUser = {
+                  uid: 'demo-guru-smpn2',
+                  displayName: 'Admin TU & Guru SMPN 2 Sukabumi',
+                  email: 'engkuskusnandar55@guru.smp.belajar.id',
+                  photoURL: ''
+                } as unknown as User;
+                setUser(demoUser);
+                setToken('demo-token');
+                setAboutInfo({
+                  user: { displayName: 'Admin TU & Guru SMPN 2 Sukabumi', emailAddress: 'engkuskusnandar55@guru.smp.belajar.id' },
+                  storageQuota: { usage: '2147483648', limit: '107374182400', usageInDrive: '2147483648', usageInDriveTrash: '0' }
+                });
+                setFiles([
+                  { id: 'f-1', name: '📁 01_KOSP_Kurikulum_Merdeka_2025_2026', mimeType: 'application/vnd.google-apps.folder', modifiedTime: new Date().toISOString() },
+                  { id: 'f-2', name: '📁 02_SK_Pembagian_Tugas_Guru_Tendik', mimeType: 'application/vnd.google-apps.folder', modifiedTime: new Date().toISOString() },
+                  { id: 'f-3', name: '📁 03_Arsip_Surat_Resmi_Kedinasan_TU', mimeType: 'application/vnd.google-apps.folder', modifiedTime: new Date().toISOString() },
+                  { id: 'f-4', name: 'KOSP_Fase_D_SMPN_2_Kota_Sukabumi.pdf', mimeType: 'application/pdf', size: '2450000', modifiedTime: new Date().toISOString(), webViewLink: 'https://drive.google.com' },
+                  { id: 'f-5', name: 'SK_Kepala_Sekolah_Pembagian_Tugas_2025.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: '540000', modifiedTime: new Date().toISOString(), webViewLink: 'https://drive.google.com' },
+                  { id: 'f-6', name: 'RKAS_BOS_SMPN2_Sukabumi_Tahun_2026.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size: '1240000', modifiedTime: new Date().toISOString(), webViewLink: 'https://drive.google.com' },
+                  { id: 'f-7', name: 'SOP_Pelayanan_Administrasi_Tata_Usaha.pdf', mimeType: 'application/pdf', size: '890000', modifiedTime: new Date().toISOString(), webViewLink: 'https://drive.google.com' }
+                ]);
+                setAuthError(null);
+              }}
+              className="text-[11px] text-blue-700 hover:text-blue-800 hover:underline font-medium inline-flex items-center gap-1 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span>Gunakan Mode Simulasi Berkas Sekolah (Coba Fitur Drive Tanpa Tunggu Setting Domain)</span>
+            </button>
+
+            <span className="text-[11px] text-slate-400 font-mono">
               Protokol Resmi Google OAuth 2.0 · SMPN 2 Kota Sukabumi
             </span>
           </div>
