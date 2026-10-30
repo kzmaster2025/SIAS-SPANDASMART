@@ -114,11 +114,22 @@ export interface NilaiMapel {
   capaianKompetensi: string;
 }
 
+export type PredikatKokurikuler = 'Sangat Berkembang' | 'Berkembang Sesuai Harapan' | 'Mulai Berkembang' | 'Belum Berkembang';
+
+export interface CapaianKokurikuler {
+  dimensi: string;
+  deskripsiDimensi?: string;
+  temaProjek?: string;
+  predikat: PredikatKokurikuler;
+  catatan: string;
+}
+
 export interface RaporSiswa {
   siswaId: string;
   semester: 'Ganjil' | 'Genap';
   tahunAjaran: string; // e.g. "2025/2026"
   nilai: NilaiMapel[];
+  kokurikuler?: CapaianKokurikuler[];
   kehadiran: {
     sakit: number;
     izin: number;

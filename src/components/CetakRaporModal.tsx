@@ -1,6 +1,7 @@
 import React from 'react';
 import { RaporSiswa, Siswa } from '../types';
-import { X, Printer, Award, BookOpen } from 'lucide-react';
+import { getDefaultKokurikuler } from '../data/dimensiProfilLulusan';
+import { X, Printer, Award, BookOpen, Compass } from 'lucide-react';
 
 interface CetakRaporModalProps {
   rapor: RaporSiswa | null;
@@ -11,9 +12,13 @@ interface CetakRaporModalProps {
 export const CetakRaporModal: React.FC<CetakRaporModalProps> = ({ rapor, siswa, onClose }) => {
   if (!rapor || !siswa) return null;
 
+  const kokurikulerData = rapor.kokurikuler && rapor.kokurikuler.length === 8
+    ? rapor.kokurikuler
+    : getDefaultKokurikuler();
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-3xl w-full p-6 my-8">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-4xl w-full p-6 my-8">
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-5 no-print">
           <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 uppercase tracking-wider">
             <Award className="w-4 h-4 text-emerald-600" />
@@ -25,7 +30,7 @@ export const CetakRaporModal: React.FC<CetakRaporModalProps> = ({ rapor, siswa, 
         </div>
 
         {/* Lembar Rapor A4 Layout */}
-        <div className="p-8 border border-slate-300 rounded-lg bg-white text-slate-900 font-sans text-xs space-y-4">
+        <div className="p-8 border border-slate-300 rounded-lg bg-white text-slate-900 font-sans text-xs space-y-4 print:p-0 print:border-none">
           {/* Header Rapor */}
           <div className="text-center pb-3 border-b-2 border-slate-900">
             <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
@@ -75,23 +80,23 @@ export const CetakRaporModal: React.FC<CetakRaporModalProps> = ({ rapor, siswa, 
             </div>
           </div>
 
-          {/* Tabel Nilai Mata Pelajaran */}
+          {/* Tabel A: Nilai Mata Pelajaran */}
           <div className="space-y-2">
             <h4 className="font-bold text-xs uppercase tracking-wide text-slate-800">
-              A. Nilai Asesmen & Capaian Kompetensi
+              A. Nilai Asesmen & Capaian Kompetensi Mata Pelajaran
             </h4>
             <table className="w-full text-left border-collapse border border-slate-300 text-[11px]">
               <thead>
                 <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300">
                   <th className="p-2 border-r border-slate-300 w-8 text-center">No</th>
-                  <th className="p-2 border-r border-slate-300">Mata Pelajaran</th>
+                  <th className="p-2 border-r border-slate-300 w-52">Mata Pelajaran</th>
                   <th className="p-2 border-r border-slate-300 w-16 text-center">Nilai Akhir</th>
                   <th className="p-2">Capaian Kompetensi Pembelajaran</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-300">
                 {rapor.nilai.map((n, i) => (
-                  <tr key={n.kodeMapel}>
+                  <tr key={i}>
                     <td className="p-2 border-r border-slate-300 text-center font-mono">{i + 1}</td>
                     <td className="p-2 border-r border-slate-300 font-semibold">{n.namaMapel}</td>
                     <td className="p-2 border-r border-slate-300 text-center font-bold font-mono">{n.nilaiAkhir}</td>
@@ -102,17 +107,68 @@ export const CetakRaporModal: React.FC<CetakRaporModalProps> = ({ rapor, siswa, 
             </table>
           </div>
 
+          {/* Tabel B: Kegiatan Kokurikuler (8 Dimensi Profil Lulusan) */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-xs uppercase tracking-wide text-slate-800 flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-blue-700" />
+                <span>B. Asesmen Kokurikuler (8 Dimensi Profil Lulusan)</span>
+              </h4>
+              <span className="text-[10px] text-slate-500 font-medium">Standar Kompetensi Lulusan (Deep Learning)</span>
+            </div>
+            <table className="w-full text-left border-collapse border border-slate-300 text-[10px]">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300">
+                  <th className="p-1.5 border-r border-slate-300 w-7 text-center">No</th>
+                  <th className="p-1.5 border-r border-slate-300 w-48">Dimensi & Tema Projek Kokurikuler</th>
+                  <th className="p-1.5 border-r border-slate-300 w-36 text-center">Predikat Capaian</th>
+                  <th className="p-1.5">Catatan Perkembangan & Observasi Karakter</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-300">
+                {kokurikulerData.map((k, i) => (
+                  <tr key={i}>
+                    <td className="p-1.5 border-r border-slate-300 text-center font-mono">{i + 1}</td>
+                    <td className="p-1.5 border-r border-slate-300">
+                      <p className="font-bold text-slate-900">{k.dimensi}</p>
+                      {k.temaProjek && (
+                        <p className="text-[9px] text-blue-800 italic mt-0.5">Tema: {k.temaProjek}</p>
+                      )}
+                    </td>
+                    <td className="p-1.5 border-r border-slate-300 text-center font-semibold">
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] ${
+                        k.predikat === 'Sangat Berkembang'
+                          ? 'bg-emerald-50 text-emerald-800 font-bold'
+                          : k.predikat === 'Berkembang Sesuai Harapan'
+                          ? 'bg-blue-50 text-blue-800 font-bold'
+                          : k.predikat === 'Mulai Berkembang'
+                          ? 'bg-amber-50 text-amber-800'
+                          : 'bg-rose-50 text-rose-800'
+                      }`}>
+                        {k.predikat}
+                      </span>
+                    </td>
+                    <td className="p-1.5 text-slate-700 leading-tight text-[10px]">
+                      {k.catatan}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
           {/* Ekstrakurikuler & Kehadiran */}
-          <div className="grid grid-cols-2 gap-4 text-xs pt-2">
+          <div className="grid grid-cols-2 gap-4 text-xs pt-1">
             <div>
               <h4 className="font-bold text-xs uppercase tracking-wide text-slate-800 mb-1.5">
-                B. Ekstrakurikuler
+                C. Kegiatan Ekstrakurikuler
               </h4>
               <table className="w-full border-collapse border border-slate-300 text-[11px]">
                 <thead>
                   <tr className="bg-slate-100 font-bold border-b border-slate-300">
                     <th className="p-1.5 border-r border-slate-300">Kegiatan</th>
                     <th className="p-1.5 border-r border-slate-300 w-24 text-center">Predikat</th>
+                    <th className="p-1.5">Keterangan</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300">
@@ -120,6 +176,7 @@ export const CetakRaporModal: React.FC<CetakRaporModalProps> = ({ rapor, siswa, 
                     <tr key={idx}>
                       <td className="p-1.5 border-r border-slate-300 font-medium">{e.nama}</td>
                       <td className="p-1.5 border-r border-slate-300 text-center font-semibold">{e.predikat}</td>
+                      <td className="p-1.5 text-slate-600 text-[10px]">{e.keterangan || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -128,31 +185,31 @@ export const CetakRaporModal: React.FC<CetakRaporModalProps> = ({ rapor, siswa, 
 
             <div>
               <h4 className="font-bold text-xs uppercase tracking-wide text-slate-800 mb-1.5">
-                C. Ketidakhadiran
+                D. Ketidakhadiran
               </h4>
               <div className="border border-slate-300 rounded p-2 bg-slate-50 text-[11px] space-y-1 font-mono">
                 <div className="flex justify-between">
                   <span>Sakit (S)</span>
-                  <span className="font-bold">{rapor.kehadiran.sakit} Hari</span>
+                  <span className="font-bold text-blue-700">{rapor.kehadiran.sakit} Hari</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Izin (I)</span>
-                  <span className="font-bold">{rapor.kehadiran.izin} Hari</span>
+                  <span className="font-bold text-amber-700">{rapor.kehadiran.izin} Hari</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tanpa Keterangan (A)</span>
-                  <span className="font-bold">{rapor.kehadiran.alpa} Hari</span>
+                  <span className="font-bold text-rose-700">{rapor.kehadiran.alpa} Hari</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Catatan Wali Kelas */}
-          <div className="pt-2 border-t border-slate-200">
+          <div className="pt-1 border-t border-slate-200">
             <h4 className="font-bold text-xs uppercase tracking-wide text-slate-800 mb-1">
-              D. Catatan Wali Kelas
+              E. Catatan Wali Kelas
             </h4>
-            <div className="p-2.5 rounded bg-slate-50 border border-slate-300 italic text-[11px] text-slate-800">
+            <div className="p-2.5 rounded bg-slate-50 border border-slate-300 italic text-[11px] text-slate-800 leading-relaxed">
               "{rapor.catatanWaliKelas}"
             </div>
           </div>
@@ -187,7 +244,7 @@ export const CetakRaporModal: React.FC<CetakRaporModalProps> = ({ rapor, siswa, 
         {/* Action Buttons */}
         <div className="mt-5 flex items-center justify-between no-print">
           <span className="text-xs text-slate-500 font-mono">
-            Format Resmi Rapor Hasil Belajar Kurikulum Merdeka Kemendikbudristek
+            Format Resmi Rapor Hasil Belajar Kurikulum Merdeka & 8 Dimensi Profil Lulusan
           </span>
           <div className="flex items-center gap-2">
             <button

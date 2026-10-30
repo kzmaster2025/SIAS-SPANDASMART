@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Siswa, RaporSiswa, NilaiMapel } from '../types';
+import { Siswa, RaporSiswa, NilaiMapel, CapaianKokurikuler, PredikatKokurikuler } from '../types';
 import { MOCK_RAPOR_CONTOH } from '../data/mockData';
+import { DELAPAN_DIMENSI_PROFIL_LULUSAN, getDefaultKokurikuler } from '../data/dimensiProfilLulusan';
 import { InputRaporModal } from './InputRaporModal';
 import {
   BookOpen,
@@ -16,7 +17,9 @@ import {
   Edit3,
   Save,
   Trash2,
-  FileCheck
+  Compass,
+  Check,
+  RotateCcw
 } from 'lucide-react';
 
 interface AdministrasiAkademikProps {
@@ -47,12 +50,20 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
   // Helper to get or generate initial student rapor
   const getInitialRapor = (siswaId: string): RaporSiswa => {
     if (raporStore && raporStore[siswaId]) {
-      return { ...raporStore[siswaId] };
+      const stored = raporStore[siswaId];
+      return {
+        ...stored,
+        kokurikuler:
+          stored.kokurikuler && stored.kokurikuler.length === 8
+            ? stored.kokurikuler
+            : getDefaultKokurikuler()
+      };
     }
     // Default clone of mock template
     return {
       ...MOCK_RAPOR_CONTOH,
       siswaId: siswaId,
+      kokurikuler: getDefaultKokurikuler(),
       catatanWaliKelas: `Peserta didik menunjukkan partisipasi aktif dalam pembelajaran Kurikulum Merdeka. Terus kembangkan potensi dan integritas.`
     };
   };
@@ -80,6 +91,28 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
     }
 
     setCurrentRapor({ ...currentRapor, nilai: updatedNilai });
+    setHasUnsavedChanges(true);
+  };
+
+  const handleUpdateKokurikuler = (index: number, field: keyof CapaianKokurikuler, val: any) => {
+    if (!isAdmin) return;
+    const currentList = currentRapor.kokurikuler && currentRapor.kokurikuler.length === 8
+      ? [...currentRapor.kokurikuler]
+      : getDefaultKokurikuler();
+
+    (currentList[index] as any)[field] = val;
+    setCurrentRapor({ ...currentRapor, kokurikuler: currentList });
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSetAllKokurikulerPredikat = (predikat: PredikatKokurikuler) => {
+    if (!isAdmin) return;
+    const currentList = currentRapor.kokurikuler && currentRapor.kokurikuler.length === 8
+      ? [...currentRapor.kokurikuler]
+      : getDefaultKokurikuler();
+
+    const updated = currentList.map(k => ({ ...k, predikat }));
+    setCurrentRapor({ ...currentRapor, kokurikuler: updated });
     setHasUnsavedChanges(true);
   };
 
@@ -141,6 +174,10 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
     currentRapor.nilai.reduce((sum, n) => sum + (Number(n.nilaiAkhir) || 0), 0) / (currentRapor.nilai.length || 1)
   );
 
+  const kokurikulerDisplay = currentRapor.kokurikuler && currentRapor.kokurikuler.length === 8
+    ? currentRapor.kokurikuler
+    : getDefaultKokurikuler();
+
   const jadwalPelajaran7A = [
     { hari: 'Senin', mapel: ['Upacara Bendera', 'Pendidikan Agama Islam (3 JP)', 'Bahasa Indonesia (3 JP)', 'Matematika (2 JP)'] },
     { hari: 'Selasa', mapel: ['Matematika (2 JP)', 'Ilmu Pengetahuan Alam (3 JP)', 'Informatika (3 JP)', 'Seni Musik/Rupa (2 JP)'] },
@@ -165,7 +202,7 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
             Asesmen Pembelajaran & Rapor Siswa
           </h1>
           <p className="text-xs text-slate-600 mt-0.5">
-            Fasilitas lengkap penginputan asesmen formatif, sumatif materi, capaian kompetensi, dan cetak buku rapor resmi.
+            Penginputan nilai formatif, sumatif, kegiatan kokurikuler 8 dimensi profil lulusan, ekstrakurikuler, dan cetak rapor resmi.
           </p>
         </div>
 
@@ -180,10 +217,10 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
               setIsInputModalOpen(true);
             }}
             className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
-            title={isAdmin ? "Buka formulir input nilai lengkap" : "Masuk admin untuk input nilai"}
+            title={isAdmin ? "Buka formulir input nilai & kokurikuler lengkap" : "Masuk admin untuk input"}
           >
             {isAdmin ? <Edit3 className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-            <span>+ Input / Edit Nilai Rapor Siswa</span>
+            <span>+ Input / Edit Nilai & Kokurikuler</span>
           </button>
 
           {isAdmin && hasUnsavedChanges && (
@@ -201,7 +238,7 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
             className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
           >
             <Printer className="w-4 h-4 text-blue-700" />
-            <span>Cetak Rapor</span>
+            <span>Cetak Rapor Siswa</span>
           </button>
         </div>
       </div>
@@ -216,7 +253,7 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
             <div>
               <span className="font-bold">Mode Pengunjung (Hanya Lihat):</span>
               <span className="ml-1 text-amber-800">
-                Data nilai dan capaian siswa dapat dilihat dan dicetak. Untuk menginput, menambah mapel, atau mengedit nilai formatif/sumatif, silakan masuk sebagai Administrator atau Guru.
+                Data nilai mapel dan asesmen kokurikuler 8 dimensi profil lulusan ditampilkan dalam mode lihat. Untuk menginput nilai atau mengubah predikat, silakan masuk sebagai Administrator atau Guru.
               </span>
             </div>
           </div>
@@ -238,7 +275,7 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>
-            Nilai rapor untuk <strong>{selectedSiswa.nama}</strong> ({selectedSiswa.kelas}) berhasil disimpan ke database cloud!
+            Nilai rapor dan 8 Dimensi Profil Lulusan untuk <strong>{selectedSiswa.nama}</strong> ({selectedSiswa.kelas}) berhasil disimpan ke cloud database!
           </span>
         </div>
       )}
@@ -267,7 +304,7 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
               activeTab === 'rapor' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Asesmen Nilai Rapor
+            Asesmen Nilai & Kokurikuler
           </button>
           <button
             onClick={() => setActiveTab('jadwal')}
@@ -314,16 +351,16 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
             </div>
           </div>
 
-          {/* Tabel Nilai Asesmen */}
+          {/* SECTION A: TABEL NILAI ASESMEN MAPEL */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  Rekap Nilai Capaian Kompetensi Kurikulum Merdeka ({currentRapor.nilai.length} Mapel)
+                  A. Rekap Nilai Asesmen Mata Pelajaran ({currentRapor.nilai.length} Mapel)
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {isAdmin
-                    ? 'Anda dapat mengedit angka nilai langsung pada tabel ini atau menggunakan tombol "+ Input / Edit Nilai Rapor Siswa".'
+                    ? 'Edit nilai formatif dan sumatif secara langsung pada tabel atau klik tombol di atas.'
                     : 'Mode lihat saja: Menampilkan nilai formatif, sumatif, dan deskripsi capaian pembelajaran.'}
                 </p>
               </div>
@@ -455,12 +492,179 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
                 </tbody>
               </table>
             </div>
+          </div>
 
-            {/* Ekstrakurikuler & Catatan */}
-            <div className="p-4 bg-slate-50/50 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          {/* SECTION B: KEGIATAN KOKURIKULER (8 DIMENSI PROFIL LULUSAN) */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-blue-50/60 to-indigo-50/40">
+              <div className="flex items-start gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <Compass className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900">
+                      B. Kegiatan Kokurikuler (Asesmen 8 Dimensi Profil Lulusan)
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                      Standar Kelulusan Utuh
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Penilaian karakter, integritas, dan kompetensi projek kokurikuler sesuai 8 Dimensi Profil Lulusan Kemendikdasmen.
+                  </p>
+                </div>
+              </div>
+
+              {isAdmin && (
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleSetAllKokurikulerPredikat('Berkembang Sesuai Harapan')}
+                    className="px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg shadow-2xs cursor-pointer"
+                  >
+                    Setel Semua BSH
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSetAllKokurikulerPredikat('Sangat Berkembang')}
+                    className="px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-white border border-emerald-200 hover:bg-emerald-50 rounded-lg shadow-2xs cursor-pointer"
+                  >
+                    Setel Semua SB
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsInputModalOpen(true)}
+                    className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-white border border-blue-300 hover:bg-blue-50 rounded-lg inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Form Kokurikuler</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 8 Dimensi Grid Cards */}
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {kokurikulerDisplay.map((k, idx) => {
+                const meta = DELAPAN_DIMENSI_PROFIL_LULUSAN[idx] || { nomor: idx + 1, fokus: '' };
+
+                const getBadgeColor = (p: string) => {
+                  switch (p) {
+                    case 'Sangat Berkembang':
+                      return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+                    case 'Berkembang Sesuai Harapan':
+                      return 'bg-blue-50 text-blue-800 border-blue-200';
+                    case 'Mulai Berkembang':
+                      return 'bg-amber-50 text-amber-800 border-amber-200';
+                    default:
+                      return 'bg-rose-50 text-rose-800 border-rose-200';
+                  }
+                };
+
+                return (
+                  <div
+                    key={idx}
+                    className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-blue-300 transition-all shadow-2xs flex flex-col justify-between space-y-2.5"
+                  >
+                    <div>
+                      {/* Top Header of Card */}
+                      <div className="flex items-start justify-between gap-2 pb-1.5 border-b border-slate-200/60">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-5 h-5 rounded-md bg-blue-700 text-white font-mono font-bold flex items-center justify-center text-[10px] shrink-0">
+                            {idx + 1}
+                          </span>
+                          <span className="font-bold text-slate-900 text-xs leading-snug">
+                            {k.dimensi}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Predikat Selector or Badge */}
+                      <div className="my-2">
+                        {isAdmin ? (
+                          <div className="space-y-0.5">
+                            <span className="text-[10px] text-slate-500 font-semibold block">Predikat Capaian:</span>
+                            <select
+                              value={k.predikat}
+                              onChange={(e) => handleUpdateKokurikuler(idx, 'predikat', e.target.value as PredikatKokurikuler)}
+                              className={`w-full px-2 py-1 text-[11px] font-bold rounded-lg border cursor-pointer ${getBadgeColor(k.predikat)}`}
+                            >
+                              <option value="Sangat Berkembang">Sangat Berkembang (SB)</option>
+                              <option value="Berkembang Sesuai Harapan">Berkembang Sesuai Harapan (BSH)</option>
+                              <option value="Mulai Berkembang">Mulai Berkembang (MB)</option>
+                              <option value="Belum Berkembang">Belum Berkembang (BB)</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getBadgeColor(k.predikat)}`}>
+                            <Check className="w-3 h-3" />
+                            <span>{k.predikat}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Tema Projek */}
+                      <div className="space-y-0.5 mb-2">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
+                          Tema Projek / Fokus
+                        </span>
+                        {isAdmin ? (
+                          <input
+                            type="text"
+                            value={k.temaProjek || ''}
+                            onChange={(e) => handleUpdateKokurikuler(idx, 'temaProjek', e.target.value)}
+                            placeholder="Tema Projek..."
+                            className="w-full px-2 py-1 text-[11px] font-medium bg-white border border-slate-200 rounded"
+                          />
+                        ) : (
+                          <p className="text-[11px] font-semibold text-blue-900 line-clamp-1">
+                            {k.temaProjek || '-'}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Catatan Observasi / Deskripsi */}
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
+                          Catatan Perkembangan
+                        </span>
+                        {isAdmin ? (
+                          <textarea
+                            rows={3}
+                            value={k.catatan}
+                            onChange={(e) => handleUpdateKokurikuler(idx, 'catatan', e.target.value)}
+                            className="w-full px-2 py-1 text-[10px] bg-white border border-slate-200 rounded leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-600"
+                            placeholder="Catatan capaian dimensi..."
+                          />
+                        ) : (
+                          <p className="text-[11px] text-slate-600 leading-relaxed italic line-clamp-4">
+                            "{k.catatan}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-1.5 border-t border-slate-200/50 text-[10px] text-slate-400">
+                      Dimensi {idx + 1} dari 8 Dimensi SKL
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SECTION C & D: EKSTRAKURIKULER & CATATAN WALI KELAS */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-slate-800">Kegiatan Ekstrakurikuler</h4>
+                  <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-blue-700" />
+                    <span>C. Kegiatan Ekstrakurikuler</span>
+                  </h4>
                   {isAdmin && (
                     <button
                       type="button"
@@ -487,7 +691,10 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-slate-800">Catatan Wali Kelas & Kehadiran</h4>
+                  <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-700" />
+                    <span>D. Catatan Wali Kelas & Kehadiran</span>
+                  </h4>
                   {isAdmin && (
                     <button
                       type="button"

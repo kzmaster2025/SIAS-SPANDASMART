@@ -1,4 +1,5 @@
 import { Siswa, GuruTendik, SuratResmi, TransaksiKeuangan, AgendaSekolah, RaporSiswa, DokumenSekolah } from '../types';
+import { getDefaultKokurikuler } from './dimensiProfilLulusan';
 
 export const PROFIL_SEKOLAH = {
   nama: 'SMP Negeri 2 Kota Sukabumi',
@@ -338,6 +339,7 @@ export const MOCK_RAPOR_CONTOH: RaporSiswa = {
     { nama: 'Pramuka Penggalang', predikat: 'Sangat Baik', keterangan: 'Aktif dalam kegiatan jambore dan kepanduan' },
     { nama: 'Robotik & Coding', predikat: 'Sangat Baik', keterangan: 'Juara 2 Lomba Web Programming Pelajar Kota Sukabumi' }
   ],
+  kokurikuler: getDefaultKokurikuler(),
   nilai: [
     {
       kodeMapel: 'PAI',
