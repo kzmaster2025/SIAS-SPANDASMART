@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Siswa } from '../types';
+import { normalizeDateToIso } from '../utils/dateHelper';
 import {
   X,
   Upload,
@@ -232,7 +233,8 @@ export const ImportSiswaExcelModal: React.FC<ImportSiswaExcelModalProps> = ({
         const rawTingkat = findVal(row, ['tingkat', 'kelas tingkat', 'tingkat kelas', 'jenjang']);
         const rawJk = findVal(row, ['jenis kelamin', 'jk', 'l/p', 'gender', 'sex']);
         const rawTempatLahir = findVal(row, ['tempat lahir', 'kota lahir', 'tempat']) || 'Sukabumi';
-        const rawTanggalLahir = findVal(row, ['tanggal lahir', 'tgl lahir', 'tgl', 'birthdate']) || '2012-01-01';
+        const unnormalizedTanggalLahir = findVal(row, ['tanggal lahir', 'tgl lahir', 'tgl', 'birthdate']) || '2012-01-01';
+        const rawTanggalLahir = normalizeDateToIso(unnormalizedTanggalLahir) || '2012-01-01';
         const rawAgama = findVal(row, ['agama', 'religion']) || 'Islam';
         const rawAlamat = findVal(row, ['alamat domisili', 'alamat', 'tempat tinggal', 'domisili']) || 'Kota Sukabumi';
         const rawNamaAyah = findVal(row, ['nama ayah', 'ayah', 'wali ayah']);

@@ -622,6 +622,48 @@ export const EditProfilModal: React.FC<EditProfilModalProps> = ({
                     required
                   />
                 </div>
+
+                <div className="sm:col-span-2 pt-3 border-t border-slate-200">
+                  <h4 className="font-bold text-slate-900 mb-2">Penandatanganan Kartu Pelajar Digital</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-slate-600 block mb-1">Jabatan di Bawah Titimangsa Kartu</label>
+                      <input
+                        type="text"
+                        value={formData.kartuPelajarSettings?.jabatan || 'Kepala SMPN 2 Kota Sukabumi'}
+                        onChange={(e) =>
+                          setFormData(prev => ({
+                            ...prev,
+                            kartuPelajarSettings: {
+                              ...prev.kartuPelajarSettings,
+                              jabatan: e.target.value
+                            }
+                          }))
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600"
+                        placeholder="Kepala SMPN 2 Kota Sukabumi"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-slate-600 block mb-1">Kota & Bulan Terbit Kartu (Titimangsa)</label>
+                      <input
+                        type="text"
+                        value={formData.kartuPelajarSettings?.titimangsa || 'Sukabumi, Juli 2025'}
+                        onChange={(e) =>
+                          setFormData(prev => ({
+                            ...prev,
+                            kartuPelajarSettings: {
+                              ...prev.kartuPelajarSettings,
+                              titimangsa: e.target.value
+                            }
+                          }))
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600"
+                        placeholder="Sukabumi, Juli 2025"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

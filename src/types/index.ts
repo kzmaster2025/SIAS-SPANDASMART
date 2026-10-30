@@ -208,6 +208,11 @@ export interface ProfilSekolahData {
   visi: string;
   misi: string[];
   fasilitas: { nama: string; kapasitas: string; status: string }[];
+  kartuPelajarSettings?: {
+    titimangsa?: string;
+    jabatan?: string;
+    subHeaderDinas?: string;
+  };
   statistikUmum?: {
     totalSiswa: number;
     totalRombel: number;

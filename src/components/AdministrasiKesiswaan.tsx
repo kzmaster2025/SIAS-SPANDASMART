@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { Siswa } from '../types';
+import { formatTanggalLahirIndo, normalizeDateToIso } from '../utils/dateHelper';
 import {
   Search,
   Plus,
@@ -111,7 +112,10 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
       return;
     }
     setEditingSiswa(siswa);
-    setFormData({ ...siswa });
+    setFormData({
+      ...siswa,
+      tanggalLahir: normalizeDateToIso(siswa.tanggalLahir) || '2012-01-01'
+    });
     setIsModalOpen(true);
   };
 
@@ -407,7 +411,7 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
                       {siswa.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
                     </td>
                     <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
-                      <div>{siswa.tempatLahir}, {siswa.tanggalLahir}</div>
+                      <div>{siswa.tempatLahir}, {formatTanggalLahirIndo(siswa.tanggalLahir)}</div>
                       <div className="text-[11px] text-slate-400">{siswa.agama}</div>
                     </td>
                     <td className="py-3 px-4 text-slate-600 whitespace-nowrap">

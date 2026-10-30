@@ -895,6 +895,14 @@ export default function App() {
       <KartuPelajarModal
         siswa={selectedStudentForCard}
         onClose={() => setSelectedStudentForCard(null)}
+        profil={profilSekolah}
+        isAdmin={isAdmin}
+        onOpenEditProfil={() => setIsEditProfilModalOpen(true)}
+        onOpenAdminLogin={() => {
+          setLoginModalMode('login');
+          setIsLoginModalOpen(true);
+        }}
+        onUpdateProfil={handleSaveProfil}
       />
 
       <CetakSuratModal
