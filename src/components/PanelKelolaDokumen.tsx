@@ -42,7 +42,7 @@ export const PanelKelolaDokumen: React.FC<PanelKelolaDokumenProps> = ({
   onPreviewDokumen,
   onNavigateToDrive,
   onUploadToDrive,
-  isAdmin = true,
+  isAdmin = false,
   onOpenAdminLogin
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -209,24 +209,64 @@ ${doc.isiRingkasan}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {onNavigateToDrive && (
+          {isAdmin ? (
+            <>
+              {onNavigateToDrive && (
+                <button
+                  onClick={onNavigateToDrive}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Cloud className="w-4 h-4" />
+                  <span>Google Drive Sekolah</span>
+                </button>
+              )}
+              <button
+                onClick={handleOpenAdd}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Dokumen Baru</span>
+              </button>
+            </>
+          ) : (
             <button
-              onClick={onNavigateToDrive}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+              onClick={onOpenAdminLogin}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer"
+              title="Masuk sebagai Administrator untuk menambah atau mengedit dokumen"
             >
-              <Cloud className="w-4 h-4" />
-              <span>Google Drive Sekolah</span>
+              <Lock className="w-3.5 h-3.5 text-blue-700" />
+              <span>Masuk Admin untuk Kelola Dokumen</span>
             </button>
           )}
-          <button
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Dokumen Baru</span>
-          </button>
         </div>
       </div>
+
+      {/* Visitor Mode Notice Banner */}
+      {!isAdmin && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-800 shrink-0">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-bold">Mode Pengunjung (Hanya Lihat):</span>
+              <span className="ml-1 text-amber-800">
+                Anda dapat membaca pratinjau dan mengunduh berkas SK & regulasi sekolah secara resmi. Penambahan, pengeditan, penghapusan, dan pencadangan dokumen dibatasi khusus Administrator.
+              </span>
+            </div>
+          </div>
+          {onOpenAdminLogin && (
+            <button
+              type="button"
+              onClick={onOpenAdminLogin}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-lg font-semibold text-[11px] transition-colors cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-700" />
+              <span>Masuk Admin</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -472,29 +512,33 @@ ${doc.isiRingkasan}
                         >
                           <Download className="w-4 h-4" />
                         </button>
-                        {onUploadToDrive && (
-                          <button
-                            onClick={() => onUploadToDrive(doc)}
-                            title="Cadangkan / Unggah ke Google Drive"
-                            className="p-1.5 rounded-md hover:bg-blue-50 text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
-                          >
-                            <Cloud className="w-4 h-4" />
-                          </button>
+                        {isAdmin && (
+                          <>
+                            {onUploadToDrive && (
+                              <button
+                                onClick={() => onUploadToDrive(doc)}
+                                title="Cadangkan / Unggah ke Google Drive"
+                                className="p-1.5 rounded-md hover:bg-blue-50 text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                              >
+                                <Cloud className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleOpenEdit(doc)}
+                              title="Edit Dokumen"
+                              className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteDokumen(doc.id)}
+                              title="Hapus Dokumen"
+                              className="p-1.5 rounded-md hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
                         )}
-                        <button
-                          onClick={() => handleOpenEdit(doc)}
-                          title="Edit Dokumen"
-                          className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteDokumen(doc.id)}
-                          title="Hapus Dokumen"
-                          className="p-1.5 rounded-md hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       </div>
                     </td>
                   </tr>

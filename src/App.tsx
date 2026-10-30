@@ -270,6 +270,11 @@ export default function App() {
 
   // Profile Handlers
   const handleSaveProfil = async (updated: ProfilSekolahData) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setProfilSekolah(updated);
     try {
       localStorage.setItem('sias_profil_sekolah', JSON.stringify(updated));
@@ -280,6 +285,11 @@ export default function App() {
   };
 
   const handleResetDefaultProfil = async () => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     const defaultData = PROFIL_SEKOLAH as unknown as ProfilSekolahData;
     setProfilSekolah(defaultData);
     try {
@@ -292,21 +302,41 @@ export default function App() {
 
   // Student Handlers
   const handleAddSiswa = async (siswa: Siswa) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setSiswaList(prev => [siswa, ...prev]);
     await saveSiswaCloud(siswa);
   };
 
   const handleUpdateSiswa = async (siswa: Siswa) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setSiswaList(prev => prev.map(s => s.id === siswa.id ? siswa : s));
     await saveSiswaCloud(siswa);
   };
 
   const handleDeleteSiswa = async (id: string) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setSiswaList(prev => prev.filter(s => s.id !== id));
     await deleteSiswaCloud(id);
   };
 
   const handleBatchImportSiswa = async (imported: Siswa[], mode: 'append' | 'replace') => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     let updated: Siswa[];
     if (mode === 'replace') {
       updated = [...imported];
@@ -334,6 +364,11 @@ export default function App() {
   };
 
   const handleAddGuru = async (guru: GuruTendik) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setGuruList(prev => {
       const updated = [guru, ...prev];
       saveGuruListToStorage(updated);
@@ -343,6 +378,11 @@ export default function App() {
   };
 
   const handleUpdateGuru = async (guru: GuruTendik) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setGuruList(prev => {
       const updated = prev.map(g => g.id === guru.id ? guru : g);
       saveGuruListToStorage(updated);
@@ -352,6 +392,11 @@ export default function App() {
   };
 
   const handleDeleteGuru = async (id: string) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setGuruList(prev => {
       const updated = prev.filter(g => g.id !== id);
       saveGuruListToStorage(updated);
@@ -361,6 +406,11 @@ export default function App() {
   };
 
   const handleBatchImportGuru = async (imported: GuruTendik[], mode: 'append' | 'replace') => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     let updated: GuruTendik[];
     if (mode === 'replace') {
       updated = [...imported];
@@ -376,34 +426,64 @@ export default function App() {
 
   // Surat Handlers
   const handleAddSurat = async (surat: SuratResmi) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setSuratList(prev => [surat, ...prev]);
     await saveSuratCloud(surat);
   };
 
   // Dokumen Handlers
   const handleAddDokumen = async (docItem: DokumenSekolah) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setDokumenList(prev => [docItem, ...prev]);
     await saveDokumenCloud(docItem);
   };
 
   const handleUpdateDokumen = async (docItem: DokumenSekolah) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setDokumenList(prev => prev.map(d => d.id === docItem.id ? docItem : d));
     await saveDokumenCloud(docItem);
   };
 
   const handleDeleteDokumen = async (id: string) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setDokumenList(prev => prev.filter(d => d.id !== id));
     await deleteDokumenCloud(id);
   };
 
   // Transaksi Handlers
   const handleAddTransaksi = async (trx: TransaksiKeuangan) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setTransaksiList(prev => [trx, ...prev]);
     await saveTransaksiCloud(trx);
   };
 
   // Agenda Handlers
   const handleAddAgenda = async (ag: AgendaSekolah) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setAgendaList(prev => [ag, ...prev]);
     await saveAgendaCloud(ag);
   };
@@ -426,6 +506,11 @@ export default function App() {
   };
 
   const handleSaveCustomMenu = async (menu: CustomMenu) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setCustomMenus(prev => {
       const exists = prev.some(m => m.id === menu.id);
       const updated = exists ? prev.map(m => m.id === menu.id ? menu : m) : [...prev, menu];
@@ -437,6 +522,11 @@ export default function App() {
   };
 
   const handleDeleteCustomMenu = async (id: string) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setCustomMenus(prev => {
       const updated = prev.filter(m => m.id !== id);
       saveCustomMenusToStorage(updated);
@@ -454,6 +544,11 @@ export default function App() {
   };
 
   const handleSaveCustomItem = async (item: CustomMenuItem) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setCustomMenuItems(prev => {
       const exists = prev.some(i => i.id === item.id);
       const updated = exists ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
@@ -464,6 +559,11 @@ export default function App() {
   };
 
   const handleDeleteCustomItem = async (id: string) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setCustomMenuItems(prev => {
       const updated = prev.filter(i => i.id !== id);
       saveCustomItemsToStorage(updated);
@@ -580,6 +680,11 @@ export default function App() {
               agendaList={agendaList}
               onOpenCreateSurat={() => setActiveTab('persuratan')}
               onOpenAddSiswa={() => setActiveTab('kesiswaan')}
+              isAdmin={isAdmin}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
             />
           )}
 
@@ -604,6 +709,11 @@ export default function App() {
               onDeleteSiswa={handleDeleteSiswa}
               onPrintKartuPelajar={(siswa) => setSelectedStudentForCard(siswa)}
               onBatchImportSiswa={handleBatchImportSiswa}
+              isAdmin={isAdmin}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
             />
           )}
 
@@ -614,6 +724,11 @@ export default function App() {
               onUpdateGuru={handleUpdateGuru}
               onDeleteGuru={handleDeleteGuru}
               onBatchImportGuru={handleBatchImportGuru}
+              isAdmin={isAdmin}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
             />
           )}
 
@@ -621,11 +736,23 @@ export default function App() {
             <AdministrasiAkademik
               siswaList={siswaList}
               onPrintRapor={(rapor, siswa) => setSelectedRaporForPrint({ rapor, siswa })}
+              isAdmin={isAdmin}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
             />
           )}
 
           {activeTab === 'presensi' && (
-            <AdministrasiPresensi siswaList={siswaList} />
+            <AdministrasiPresensi
+              siswaList={siswaList}
+              isAdmin={isAdmin}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
+            />
           )}
 
           {activeTab === 'persuratan' && (
@@ -635,6 +762,11 @@ export default function App() {
               guruList={guruList}
               onAddSurat={handleAddSurat}
               onPrintSurat={(surat) => setSelectedSuratForPrint(surat)}
+              isAdmin={isAdmin}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
             />
           )}
 
@@ -663,6 +795,11 @@ export default function App() {
             <AdministrasiKeuangan
               transaksiList={transaksiList}
               onAddTransaksi={handleAddTransaksi}
+              isAdmin={isAdmin}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
             />
           )}
 
@@ -670,6 +807,11 @@ export default function App() {
             <AgendaPengumuman
               agendaList={agendaList}
               onAddAgenda={handleAddAgenda}
+              isAdmin={isAdmin}
+              onOpenAdminLogin={() => {
+                setLoginModalMode('login');
+                setIsLoginModalOpen(true);
+              }}
             />
           )}
 

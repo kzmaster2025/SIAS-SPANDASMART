@@ -7,14 +7,22 @@ import {
   Download,
   AlertCircle,
   Clock,
-  Printer
+  Printer,
+  Lock,
+  Eye
 } from 'lucide-react';
 
 interface AdministrasiPresensiProps {
   siswaList: Siswa[];
+  isAdmin?: boolean;
+  onOpenAdminLogin?: () => void;
 }
 
-export const AdministrasiPresensi: React.FC<AdministrasiPresensiProps> = ({ siswaList }) => {
+export const AdministrasiPresensi: React.FC<AdministrasiPresensiProps> = ({
+  siswaList,
+  isAdmin = false,
+  onOpenAdminLogin
+}) => {
   const [selectedTanggal, setSelectedTanggal] = useState<string>(new Date().toISOString().slice(0, 10));
   const [selectedKelas, setSelectedKelas] = useState<string>('7-A');
   
@@ -35,10 +43,12 @@ export const AdministrasiPresensi: React.FC<AdministrasiPresensiProps> = ({ sisw
   const studentsInKelas = siswaList.filter(s => selectedKelas === 'all' || s.kelas === selectedKelas);
 
   const handleSetStatus = (siswaId: string, status: 'H' | 'S' | 'I' | 'A') => {
+    if (!isAdmin) return;
     setPresensiMap(prev => ({ ...prev, [siswaId]: status }));
   };
 
   const handleMarkAllHadir = () => {
+    if (!isAdmin) return;
     const updated = { ...presensiMap };
     studentsInKelas.forEach(s => {
       updated[s.id] = 'H';
@@ -75,13 +85,24 @@ export const AdministrasiPresensi: React.FC<AdministrasiPresensiProps> = ({ sisw
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={handleMarkAllHadir}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Tandai Semua Hadir</span>
-          </button>
+          {isAdmin ? (
+            <button
+              onClick={handleMarkAllHadir}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Tandai Semua Hadir</span>
+            </button>
+          ) : (
+            <button
+              onClick={onOpenAdminLogin}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer"
+              title="Masuk sebagai Administrator untuk menginput kehadiran"
+            >
+              <Lock className="w-3.5 h-3.5 text-blue-700" />
+              <span>Masuk Admin untuk Absensi</span>
+            </button>
+          )}
           <button
             onClick={() => window.print()}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
@@ -91,6 +112,33 @@ export const AdministrasiPresensi: React.FC<AdministrasiPresensiProps> = ({ sisw
           </button>
         </div>
       </div>
+
+      {/* Visitor Mode Notice Banner */}
+      {!isAdmin && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-800 shrink-0">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-bold">Mode Pengunjung (Hanya Lihat):</span>
+              <span className="ml-1 text-amber-800">
+                Jurnal rekapitulasi presensi harian siswa ditampilkan dalam mode lihat saja. Penginputan kehadiran dan catatan sakit/izin dibatasi khusus Guru Kelas / Administrator.
+              </span>
+            </div>
+          </div>
+          {onOpenAdminLogin && (
+            <button
+              type="button"
+              onClick={onOpenAdminLogin}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-lg font-semibold text-[11px] transition-colors cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-700" />
+              <span>Masuk Admin</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Filter Row & KPI Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -211,46 +259,54 @@ export const AdministrasiPresensi: React.FC<AdministrasiPresensiProps> = ({ sisw
                     <td className="py-3 px-4 whitespace-nowrap text-center">
                       <div className="inline-flex items-center gap-1 p-0.5 bg-slate-100 rounded-lg text-xs font-semibold">
                         <button
+                          type="button"
+                          disabled={!isAdmin}
                           onClick={() => handleSetStatus(siswa.id, 'H')}
-                          className={`w-7 h-7 rounded-md transition-colors cursor-pointer ${
+                          className={`w-7 h-7 rounded-md transition-colors ${
                             currentStatus === 'H'
                               ? 'bg-emerald-600 text-white shadow-xs'
                               : 'text-slate-600 hover:text-slate-900'
-                          }`}
-                          title="Hadir"
+                          } ${isAdmin ? 'cursor-pointer' : 'cursor-default opacity-85'}`}
+                          title={isAdmin ? 'Hadir' : 'Hadir (Mode Lihat Saja)'}
                         >
                           H
                         </button>
                         <button
+                          type="button"
+                          disabled={!isAdmin}
                           onClick={() => handleSetStatus(siswa.id, 'S')}
-                          className={`w-7 h-7 rounded-md transition-colors cursor-pointer ${
+                          className={`w-7 h-7 rounded-md transition-colors ${
                             currentStatus === 'S'
                               ? 'bg-blue-600 text-white shadow-xs'
                               : 'text-slate-600 hover:text-slate-900'
-                          }`}
-                          title="Sakit"
+                          } ${isAdmin ? 'cursor-pointer' : 'cursor-default opacity-85'}`}
+                          title={isAdmin ? 'Sakit' : 'Sakit (Mode Lihat Saja)'}
                         >
                           S
                         </button>
                         <button
+                          type="button"
+                          disabled={!isAdmin}
                           onClick={() => handleSetStatus(siswa.id, 'I')}
-                          className={`w-7 h-7 rounded-md transition-colors cursor-pointer ${
+                          className={`w-7 h-7 rounded-md transition-colors ${
                             currentStatus === 'I'
                               ? 'bg-amber-600 text-white shadow-xs'
                               : 'text-slate-600 hover:text-slate-900'
-                          }`}
-                          title="Izin"
+                          } ${isAdmin ? 'cursor-pointer' : 'cursor-default opacity-85'}`}
+                          title={isAdmin ? 'Izin' : 'Izin (Mode Lihat Saja)'}
                         >
                           I
                         </button>
                         <button
+                          type="button"
+                          disabled={!isAdmin}
                           onClick={() => handleSetStatus(siswa.id, 'A')}
-                          className={`w-7 h-7 rounded-md transition-colors cursor-pointer ${
+                          className={`w-7 h-7 rounded-md transition-colors ${
                             currentStatus === 'A'
                               ? 'bg-rose-600 text-white shadow-xs'
                               : 'text-slate-600 hover:text-slate-900'
-                          }`}
-                          title="Alpa"
+                          } ${isAdmin ? 'cursor-pointer' : 'cursor-default opacity-85'}`}
+                          title={isAdmin ? 'Alpa' : 'Alpa (Mode Lihat Saja)'}
                         >
                           A
                         </button>
@@ -259,12 +315,18 @@ export const AdministrasiPresensi: React.FC<AdministrasiPresensiProps> = ({ sisw
                     <td className="py-3 px-4">
                       <input
                         type="text"
-                        placeholder="Tambahkan catatan jika sakit/izin..."
+                        disabled={!isAdmin}
+                        readOnly={!isAdmin}
+                        placeholder={isAdmin ? 'Tambahkan catatan jika sakit/izin...' : '-'}
                         value={keteranganMap[siswa.id] || ''}
                         onChange={(e) =>
                           setKeteranganMap(prev => ({ ...prev, [siswa.id]: e.target.value }))
                         }
-                        className="w-full px-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 text-slate-800"
+                        className={`w-full px-2.5 py-1 text-xs border rounded text-slate-800 ${
+                          isAdmin
+                            ? 'bg-slate-50 border-slate-200 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600'
+                            : 'bg-transparent border-transparent text-slate-600 cursor-default'
+                        }`}
                       />
                     </td>
                   </tr>

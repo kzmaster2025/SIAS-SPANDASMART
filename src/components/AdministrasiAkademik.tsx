@@ -9,17 +9,23 @@ import {
   Award,
   Clock,
   CheckCircle2,
-  FileCheck
+  FileCheck,
+  Lock,
+  Eye
 } from 'lucide-react';
 
 interface AdministrasiAkademikProps {
   siswaList: Siswa[];
   onPrintRapor: (rapor: RaporSiswa, siswa: Siswa) => void;
+  isAdmin?: boolean;
+  onOpenAdminLogin?: () => void;
 }
 
 export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
   siswaList,
-  onPrintRapor
+  onPrintRapor,
+  isAdmin = false,
+  onOpenAdminLogin
 }) => {
   const [selectedSiswaId, setSelectedSiswaId] = useState<string>(siswaList[0]?.id || 'sis-01');
   const [activeTab, setActiveTab] = useState<'rapor' | 'jadwal'>('rapor');
@@ -28,6 +34,7 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
   const selectedSiswa = siswaList.find(s => s.id === selectedSiswaId) || siswaList[0];
 
   const handleUpdateNilai = (index: number, field: keyof NilaiMapel, value: any) => {
+    if (!isAdmin) return;
     const updated = [...raporData.nilai];
     (updated[index] as any)[field] = value;
     // Auto recalculate Nilai Akhir if formatif or sumatif changed
@@ -81,6 +88,33 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Visitor Mode Notice Banner */}
+      {!isAdmin && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-800 shrink-0">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-bold">Mode Pengunjung (Hanya Lihat):</span>
+              <span className="ml-1 text-amber-800">
+                Buku rapor siswa dan jadwal pelajaran dapat dilihat dan dicetak lengkap. Penginputan nilai asesmen formatif, sumatif, dan deskripsi capaian dibatasi khusus Guru & Administrator.
+              </span>
+            </div>
+          </div>
+          {onOpenAdminLogin && (
+            <button
+              type="button"
+              onClick={onOpenAdminLogin}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-lg font-semibold text-[11px] transition-colors cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-700" />
+              <span>Masuk Admin</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Selector & Tabs */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -156,7 +190,11 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Rekap Nilai Capaian Kompetensi Kurikulum Merdeka</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Edit nilai formatif dan sumatif secara langsung untuk menghitung nilai akhir</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isAdmin
+                    ? 'Edit nilai formatif dan sumatif secara langsung untuk menghitung nilai akhir'
+                    : 'Mode lihat saja: Menampilkan nilai formatif, sumatif, dan deskripsi capaian pembelajaran'}
+                </p>
               </div>
               <span className="text-[11px] text-slate-400 font-mono">KKM Satuan Pendidikan: 75</span>
             </div>
@@ -185,20 +223,28 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
                         {n.guruPengampu}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <input
-                          type="number"
-                          value={n.formatif}
-                          onChange={(e) => handleUpdateNilai(idx, 'formatif', e.target.value)}
-                          className="w-14 px-1.5 py-1 text-center font-mono text-xs bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 font-semibold"
-                        />
+                        {isAdmin ? (
+                          <input
+                            type="number"
+                            value={n.formatif}
+                            onChange={(e) => handleUpdateNilai(idx, 'formatif', e.target.value)}
+                            className="w-14 px-1.5 py-1 text-center font-mono text-xs bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 font-semibold"
+                          />
+                        ) : (
+                          <span className="font-mono font-semibold text-slate-800 tabular-nums">{n.formatif}</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <input
-                          type="number"
-                          value={n.sumatif}
-                          onChange={(e) => handleUpdateNilai(idx, 'sumatif', e.target.value)}
-                          className="w-14 px-1.5 py-1 text-center font-mono text-xs bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 font-semibold"
-                        />
+                        {isAdmin ? (
+                          <input
+                            type="number"
+                            value={n.sumatif}
+                            onChange={(e) => handleUpdateNilai(idx, 'sumatif', e.target.value)}
+                            className="w-14 px-1.5 py-1 text-center font-mono text-xs bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 font-semibold"
+                          />
+                        ) : (
+                          <span className="font-mono font-semibold text-slate-800 tabular-nums">{n.sumatif}</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-center font-mono font-bold text-slate-900 tabular-nums">
                         <span className={`px-2 py-0.5 rounded ${n.nilaiAkhir >= 85 ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
@@ -206,12 +252,16 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
                         </span>
                       </td>
                       <td className="py-3 px-4 text-[11px] text-slate-600 leading-relaxed">
-                        <input
-                          type="text"
-                          value={n.capaianKompetensi}
-                          onChange={(e) => handleUpdateNilai(idx, 'capaianKompetensi', e.target.value)}
-                          className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
-                        />
+                        {isAdmin ? (
+                          <input
+                            type="text"
+                            value={n.capaianKompetensi}
+                            onChange={(e) => handleUpdateNilai(idx, 'capaianKompetensi', e.target.value)}
+                            className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
+                          />
+                        ) : (
+                          <span className="text-slate-700 leading-relaxed block">{n.capaianKompetensi}</span>
+                        )}
                       </td>
                     </tr>
                   ))}

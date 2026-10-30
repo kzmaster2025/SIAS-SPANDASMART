@@ -58,9 +58,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'akademik' as ActiveTab, label: 'Rapor & Asesmen', icon: BookOpen, adminOnly: false },
     { id: 'presensi' as ActiveTab, label: 'Presensi Kehadiran', icon: CalendarCheck2, adminOnly: false },
     { id: 'persuratan' as ActiveTab, label: 'Tata Usaha & E-Surat', icon: FileText, adminOnly: false },
-    { id: 'dokumen' as ActiveTab, label: 'Kelola Dokumen & SK', icon: FolderKanban, adminOnly: true },
+    { id: 'dokumen' as ActiveTab, label: 'Kelola Dokumen & SK', icon: FolderKanban, adminOnly: false },
     { id: 'drive' as ActiveTab, label: 'Google Drive Sekolah', icon: Cloud, adminOnly: true },
-    { id: 'keuangan' as ActiveTab, label: 'Keuangan BOS & Komite', icon: Wallet, adminOnly: true },
+    { id: 'keuangan' as ActiveTab, label: 'Keuangan BOS & Komite', icon: Wallet, adminOnly: false },
     { id: 'agenda' as ActiveTab, label: 'Agenda & Pengumuman', icon: Bell, adminOnly: false }
   ];
 
@@ -212,14 +212,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 );
               })}
 
-              {/* Add Custom Menu Shortcut Button */}
-              <button
-                onClick={isAdmin ? onOpenAddCustomMenu : onOpenLogin}
-                className="mt-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 text-[11px] font-semibold text-slate-600 hover:text-blue-700 transition-colors cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Tambah Tombol Menu</span>
-              </button>
+              {/* Add Custom Menu Shortcut Button (Admin Only) */}
+              {isAdmin && (
+                <button
+                  onClick={onOpenAddCustomMenu}
+                  className="mt-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 text-[11px] font-semibold text-slate-600 hover:text-blue-700 transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Tambah Tombol Menu</span>
+                </button>
+              )}
             </div>
           </nav>
         </div>

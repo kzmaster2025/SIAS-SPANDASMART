@@ -8,7 +8,9 @@ import {
   CheckCircle2,
   Calendar,
   X,
-  FileCheck
+  FileCheck,
+  Lock,
+  Eye
 } from 'lucide-react';
 
 interface TataUsahaSuratProps {
@@ -17,6 +19,8 @@ interface TataUsahaSuratProps {
   guruList: GuruTendik[];
   onAddSurat: (surat: SuratResmi) => void;
   onPrintSurat: (surat: SuratResmi) => void;
+  isAdmin?: boolean;
+  onOpenAdminLogin?: () => void;
 }
 
 export const TataUsahaSurat: React.FC<TataUsahaSuratProps> = ({
@@ -24,7 +28,9 @@ export const TataUsahaSurat: React.FC<TataUsahaSuratProps> = ({
   siswaList,
   guruList,
   onAddSurat,
-  onPrintSurat
+  onPrintSurat,
+  isAdmin = false,
+  onOpenAdminLogin
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterJenis, setFilterJenis] = useState<string>('all');
@@ -54,6 +60,10 @@ export const TataUsahaSurat: React.FC<TataUsahaSuratProps> = ({
   });
 
   const handleOpenCreate = () => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
     setFormData({
       nomorSurat: `421.3/0${suratList.length + 88}-SMPN.2/Disdikbud/2026`,
       jenisSurat: 'Keterangan Aktif',
@@ -107,6 +117,7 @@ export const TataUsahaSurat: React.FC<TataUsahaSuratProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     if (!formData.nomorSurat || !formData.perihal) return;
 
     const newSurat: SuratResmi = {
@@ -137,14 +148,52 @@ export const TataUsahaSurat: React.FC<TataUsahaSuratProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Buat Surat Resmi Baru</span>
-        </button>
+        {isAdmin ? (
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Buat Surat Resmi Baru</span>
+          </button>
+        ) : (
+          <button
+            onClick={onOpenAdminLogin}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer shrink-0"
+            title="Masuk sebagai Administrator untuk menerbitkan surat baru"
+          >
+            <Lock className="w-3.5 h-3.5 text-blue-700" />
+            <span>Masuk Admin untuk Buat Surat</span>
+          </button>
+        )}
       </div>
+
+      {/* Visitor Mode Notice Banner */}
+      {!isAdmin && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-800 shrink-0">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-bold">Mode Pengunjung (Hanya Lihat):</span>
+              <span className="ml-1 text-amber-800">
+                Anda dapat melihat buku agenda persuratan dinas dan mencetak surat resmi. Penerbitan dan pembuatan surat baru dibatasi khusus Staf Tata Usaha / Administrator.
+              </span>
+            </div>
+          </div>
+          {onOpenAdminLogin && (
+            <button
+              type="button"
+              onClick={onOpenAdminLogin}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-lg font-semibold text-[11px] transition-colors cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-700" />
+              <span>Masuk Admin</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Filter and Search */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center gap-3">

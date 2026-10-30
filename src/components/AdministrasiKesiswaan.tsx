@@ -12,7 +12,10 @@ import {
   CheckCircle2,
   X,
   FileSpreadsheet,
-  Upload
+  Upload,
+  Lock,
+  ShieldCheck,
+  Eye
 } from 'lucide-react';
 import { ImportSiswaExcelModal } from './ImportSiswaExcelModal';
 
@@ -23,6 +26,8 @@ interface AdministrasiKesiswaanProps {
   onDeleteSiswa: (id: string) => void;
   onPrintKartuPelajar: (siswa: Siswa) => void;
   onBatchImportSiswa?: (imported: Siswa[], mode: 'append' | 'replace') => void;
+  isAdmin?: boolean;
+  onOpenAdminLogin?: () => void;
 }
 
 export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
@@ -31,7 +36,9 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
   onUpdateSiswa,
   onDeleteSiswa,
   onPrintKartuPelajar,
-  onBatchImportSiswa
+  onBatchImportSiswa,
+  isAdmin = false,
+  onOpenAdminLogin
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTingkat, setFilterTingkat] = useState<string>('all');
@@ -74,6 +81,10 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
   }, [siswaList, searchQuery, filterTingkat, filterKelas]);
 
   const handleOpenAdd = () => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
     setEditingSiswa(null);
     setFormData({
       nisn: `009${Math.floor(1000000 + Math.random() * 9000000)}`,
@@ -95,6 +106,10 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
   };
 
   const handleOpenEdit = (siswa: Siswa) => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
     setEditingSiswa(siswa);
     setFormData({ ...siswa });
     setIsModalOpen(true);
@@ -102,6 +117,7 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     if (!formData.nama || !formData.nisn || !formData.nis) return;
 
     if (editingSiswa) {
@@ -231,26 +247,67 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
             <span>Ekspor Excel</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setIsImportModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-xs cursor-pointer"
-            title="Unggah dan impor data peserta didik dari berkas Excel (.xlsx / .xls / .csv)"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
-            <span>Impor dari Excel</span>
-          </button>
+          {isAdmin ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-xs cursor-pointer"
+                title="Unggah dan impor data peserta didik dari berkas Excel (.xlsx / .xls / .csv)"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
+                <span>Impor dari Excel</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Siswa</span>
-          </button>
+              <button
+                type="button"
+                onClick={handleOpenAdd}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Siswa</span>
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenAdminLogin}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer"
+              title="Masuk sebagai Administrator untuk menambah, mengedit, atau mengimpor data"
+            >
+              <Lock className="w-3.5 h-3.5 text-blue-700" />
+              <span>Masuk Admin untuk Kelola</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Visitor Mode Notice Banner */}
+      {!isAdmin && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-800 shrink-0">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-bold">Mode Pengunjung (Hanya Lihat):</span>
+              <span className="ml-1 text-amber-800">
+                Anda dapat melihat buku induk siswa, mencari data, mencetak kartu pelajar, dan mengekspor file Excel. Penambahan, pengeditan, penghapusan, dan impor data dibatasi khusus Administrator.
+              </span>
+            </div>
+          </div>
+          {onOpenAdminLogin && (
+            <button
+              type="button"
+              onClick={onOpenAdminLogin}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-lg font-semibold text-[11px] transition-colors cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-700" />
+              <span>Masuk Admin</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center gap-3">
@@ -319,7 +376,7 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
                 <th className="py-3 px-4 whitespace-nowrap">Nama Orang Tua</th>
                 <th className="py-3 px-4 whitespace-nowrap">Kontak</th>
                 <th className="py-3 px-4 whitespace-nowrap">Status</th>
-                <th className="py-3 px-4 whitespace-nowrap text-right">Aksi</th>
+                <th className="py-3 px-4 whitespace-nowrap text-right">{isAdmin ? 'Aksi' : 'Kartu Pelajar'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -375,20 +432,24 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
                         >
                           <IdCard className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleOpenEdit(siswa)}
-                          title="Edit Siswa"
-                          className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteSiswa(siswa.id)}
-                          title="Hapus"
-                          className="p-1.5 rounded-md hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => handleOpenEdit(siswa)}
+                              title="Edit Siswa"
+                              className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteSiswa(siswa.id)}
+                              title="Hapus"
+                              className="p-1.5 rounded-md hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
