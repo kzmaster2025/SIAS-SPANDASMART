@@ -137,6 +137,18 @@ export interface RaporSiswa {
   };
   catatanWaliKelas: string;
   ekskul: { nama: string; predikat: 'Sangat Baik' | 'Baik' | 'Cukup'; keterangan: string }[];
+  fase?: string;
+  kenaikanKelas?: string;
+  narasiKokurikuler?: string;
+  titimangsa?: string;
+  waliKelas?: {
+    nama: string;
+    nip: string;
+  };
+  kepalaSekolah?: {
+    nama: string;
+    nip: string;
+  };
 }
 
 export interface PresensiHarian {

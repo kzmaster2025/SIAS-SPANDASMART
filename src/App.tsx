@@ -1005,6 +1005,10 @@ export default function App() {
         rapor={selectedRaporForPrint?.rapor || null}
         siswa={selectedRaporForPrint?.siswa || null}
         onClose={() => setSelectedRaporForPrint(null)}
+        profil={profilSekolah}
+        guruList={guruList}
+        isAdmin={isAdmin}
+        onSaveRapor={handleSaveRapor}
       />
 
       <PreviewDokumenModal
