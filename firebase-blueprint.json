@@ -1,0 +1,232 @@
+{
+  "entities": {
+    "ProfilSekolah": {
+      "title": "ProfilSekolah",
+      "description": "Profil lengkap dan identitas sekolah SMPN 2 Kota Sukabumi",
+      "type": "object",
+      "properties": {
+        "nama": { "type": "string" },
+        "sebutan": { "type": "string" },
+        "npsn": { "type": "string" },
+        "nss": { "type": "string" },
+        "statusSekolah": { "type": "string" },
+        "bentukPendidikan": { "type": "string" },
+        "akreditasi": { "type": "string" },
+        "nilaiAkreditasi": { "type": "number" },
+        "noSkAkreditasi": { "type": "string" },
+        "kurikulum": { "type": "string" },
+        "tahunBerdiri": { "type": "string" },
+        "skPendirian": { "type": "string" },
+        "alamat": { "type": "string" },
+        "kodePos": { "type": "string" },
+        "telepon": { "type": "string" },
+        "email": { "type": "string" },
+        "website": { "type": "string" },
+        "dinas": { "type": "string" },
+        "provinsi": { "type": "string" },
+        "koordinat": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "heroImage": { "type": "string" },
+        "labImage": { "type": "string" },
+        "visi": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["nama", "npsn", "akreditasi", "alamat"]
+    },
+    "Siswa": {
+      "title": "Siswa",
+      "description": "Data induk siswa sekolah",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nisn": { "type": "string" },
+        "nis": { "type": "string" },
+        "nama": { "type": "string" },
+        "kelas": { "type": "string" },
+        "tingkat": { "type": "string" },
+        "jenisKelamin": { "type": "string" },
+        "tempatLahir": { "type": "string" },
+        "tanggalLahir": { "type": "string" },
+        "agama": { "type": "string" },
+        "alamat": { "type": "string" },
+        "namaAyah": { "type": "string" },
+        "namaIbu": { "type": "string" },
+        "kontakOrtu": { "type": "string" },
+        "status": { "type": "string" },
+        "fotoUrl": { "type": "string" }
+      },
+      "required": ["id", "nisn", "nama", "kelas", "status"]
+    },
+    "GuruTendik": {
+      "title": "GuruTendik",
+      "description": "Data Pendidik dan Tenaga Kependidikan GTK",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nip": { "type": "string" },
+        "nuptk": { "type": "string" },
+        "nama": { "type": "string" },
+        "gelar": { "type": "string" },
+        "jabatan": { "type": "string" },
+        "kategori": { "type": "string" },
+        "statusKepegawaian": { "type": "string" },
+        "golongan": { "type": "string" },
+        "mapel": { "type": "string" },
+        "jamMengajar": { "type": "number" },
+        "email": { "type": "string" },
+        "telepon": { "type": "string" },
+        "pendidikanTerakhir": { "type": "string" }
+      },
+      "required": ["id", "nama", "jabatan", "kategori", "statusKepegawaian"]
+    },
+    "Dokumen": {
+      "title": "Dokumen",
+      "description": "Dokumen dan SK resmi sekolah",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "judul": { "type": "string" },
+        "nomorDokumen": { "type": "string" },
+        "kategori": { "type": "string" },
+        "tahunAjaran": { "type": "string" },
+        "tanggalTerbit": { "type": "string" },
+        "pengesah": { "type": "string" },
+        "status": { "type": "string" },
+        "akses": { "type": "string" },
+        "deskripsi": { "type": "string" },
+        "fileNama": { "type": "string" },
+        "fileTipe": { "type": "string" },
+        "fileUkuran": { "type": "string" },
+        "isiRingkasan": { "type": "string" }
+      },
+      "required": ["id", "judul", "nomorDokumen", "kategori", "status"]
+    },
+    "Surat": {
+      "title": "Surat",
+      "description": "Arsip surat keluar masuk tata usaha",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nomorSurat": { "type": "string" },
+        "jenisSurat": { "type": "string" },
+        "tanggalSurat": { "type": "string" },
+        "perihal": { "type": "string" },
+        "tujuan": { "type": "string" },
+        "namaTerkait": { "type": "string" },
+        "nisnNipTerkait": { "type": "string" },
+        "statusArsip": { "type": "string" },
+        "isiSuratKhusus": { "type": "string" }
+      },
+      "required": ["id", "nomorSurat", "jenisSurat", "perihal", "statusArsip"]
+    },
+    "Transaksi": {
+      "title": "Transaksi",
+      "description": "Catatan kas keuangan sekolah BOS dan Komite",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "kodeTransaksi": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "kategori": { "type": "string" },
+        "jenis": { "type": "string" },
+        "uraian": { "type": "string" },
+        "jumlah": { "type": "number" },
+        "buktiRef": { "type": "string" },
+        "penanggungJawab": { "type": "string" }
+      },
+      "required": ["id", "kodeTransaksi", "tanggal", "kategori", "jenis", "jumlah"]
+    },
+    "Agenda": {
+      "title": "Agenda",
+      "description": "Agenda kegiatan dan pengumuman sekolah",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "judul": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "kategori": { "type": "string" },
+        "lokasi": { "type": "string" },
+        "deskripsi": { "type": "string" },
+        "penanggungJawab": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "judul", "tanggal", "kategori", "status"]
+    },
+    "CustomMenu": {
+      "title": "CustomMenu",
+      "description": "Menu navigasi dinamis yang dibuat admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "deskripsi": { "type": "string" },
+        "iconName": { "type": "string" },
+        "adminOnly": { "type": "boolean" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "label", "iconName", "adminOnly", "order"]
+    },
+    "CustomMenuItem": {
+      "title": "CustomMenuItem",
+      "description": "Konten video, gambar, dan tautan dalam menu kustom",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "menuId": { "type": "string" },
+        "tipe": { "type": "string" },
+        "judul": { "type": "string" },
+        "deskripsi": { "type": "string" },
+        "kategori": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "videoEmbedUrl": { "type": "string" },
+        "videoDuration": { "type": "string" },
+        "gambarUrl": { "type": "string" },
+        "caption": { "type": "string" },
+        "tautanUrl": { "type": "string" },
+        "tautanLabel": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "uploader": { "type": "string" }
+      },
+      "required": ["id", "menuId", "tipe", "judul", "tanggal", "uploader"]
+    }
+  },
+  "firestore": {
+    "/profil_sekolah/{docId}": {
+      "schema": "ProfilSekolah",
+      "description": "Profil identitas dan informasi sekolah"
+    },
+    "/siswa/{siswaId}": {
+      "schema": "Siswa",
+      "description": "Data induk kesiswaan"
+    },
+    "/guru/{guruId}": {
+      "schema": "GuruTendik",
+      "description": "Data pendidik dan tenaga kependidikan"
+    },
+    "/dokumen/{docId}": {
+      "schema": "Dokumen",
+      "description": "Arsip dokumen dan SK sekolah"
+    },
+    "/surat/{suratId}": {
+      "schema": "Surat",
+      "description": "Administrasi persuratan tata usaha"
+    },
+    "/transaksi/{trxId}": {
+      "schema": "Transaksi",
+      "description": "Catatan transaksi keuangan sekolah"
+    },
+    "/agenda/{agendaId}": {
+      "schema": "Agenda",
+      "description": "Agenda dan pengumuman sekolah"
+    },
+    "/custom_menus/{menuId}": {
+      "schema": "CustomMenu",
+      "description": "Tombol menu navigasi kustom buatan admin"
+    },
+    "/custom_items/{itemId}": {
+      "schema": "CustomMenuItem",
+      "description": "Data konten video gambar dan tautan di menu kustom"
+    }
+  }
+}

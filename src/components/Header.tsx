@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActiveTab, ProfilSekolahData } from '../types';
-import { Printer, ShieldCheck, Lock, Unlock, Settings, LogOut, Edit3 } from 'lucide-react';
+import { Printer, ShieldCheck, Lock, Unlock, Settings, LogOut, Edit3, Cloud } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -99,6 +99,15 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Zone 3: Actions & Admin Authentication Status */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Real-time Cloud Sync Badge */}
+        <div
+          title="Database Cloud Firestore aktif: Sinkronisasi otomatis ke semua perangkat & browser publik"
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg select-none"
+        >
+          <Cloud className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+          <span className="font-semibold">Cloud Sync</span>
+        </div>
+
         {/* Admin status pill */}
         {isAdmin ? (
           <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 text-xs">

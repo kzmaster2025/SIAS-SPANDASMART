@@ -30,6 +30,32 @@ import {
   INITIAL_CUSTOM_MENUS,
   INITIAL_CUSTOM_ITEMS
 } from './data/mockCustomData';
+import {
+  subscribeProfilSekolah,
+  subscribeGuru,
+  subscribeSiswa,
+  subscribeCustomMenus,
+  subscribeCustomItems,
+  subscribeDokumen,
+  subscribeSurat,
+  subscribeTransaksi,
+  subscribeAgenda,
+  saveProfilSekolahCloud,
+  saveSiswaCloud,
+  deleteSiswaCloud,
+  saveGuruCloud,
+  deleteGuruCloud,
+  batchImportGuruCloud,
+  saveDokumenCloud,
+  deleteDokumenCloud,
+  saveSuratCloud,
+  saveTransaksiCloud,
+  saveAgendaCloud,
+  saveCustomMenuCloud,
+  deleteCustomMenuCloud,
+  saveCustomMenuItemCloud,
+  deleteCustomMenuItemCloud
+} from './services/firestoreService';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ProfileSekolah } from './components/ProfileSekolah';
@@ -170,36 +196,113 @@ export default function App() {
     }
   };
 
+  // Real-time synchronization across devices and browsers via Firestore
+  useEffect(() => {
+    const unsubProfil = subscribeProfilSekolah((p) => {
+      setProfilSekolah(p);
+      try {
+        localStorage.setItem('sias_profil_sekolah', JSON.stringify(p));
+      } catch (e) {
+        console.warn(e);
+      }
+    });
+
+    const unsubGuru = subscribeGuru((g) => {
+      setGuruList(g);
+      try {
+        localStorage.setItem('sias_guru_list', JSON.stringify(g));
+      } catch (e) {
+        console.warn(e);
+      }
+    });
+
+    const unsubSiswa = subscribeSiswa((s) => {
+      setSiswaList(s);
+    });
+
+    const unsubMenus = subscribeCustomMenus((m) => {
+      setCustomMenus(m);
+      try {
+        localStorage.setItem('sias_custom_menus', JSON.stringify(m));
+      } catch (e) {
+        console.warn(e);
+      }
+    });
+
+    const unsubItems = subscribeCustomItems((it) => {
+      setCustomMenuItems(it);
+      try {
+        localStorage.setItem('sias_custom_items', JSON.stringify(it));
+      } catch (e) {
+        console.warn(e);
+      }
+    });
+
+    const unsubDok = subscribeDokumen((d) => {
+      setDokumenList(d);
+    });
+
+    const unsubSurat = subscribeSurat((sr) => {
+      setSuratList(sr);
+    });
+
+    const unsubTrx = subscribeTransaksi((trx) => {
+      setTransaksiList(trx);
+    });
+
+    const unsubAgenda = subscribeAgenda((ag) => {
+      setAgendaList(ag);
+    });
+
+    return () => {
+      unsubProfil();
+      unsubGuru();
+      unsubSiswa();
+      unsubMenus();
+      unsubItems();
+      unsubDok();
+      unsubSurat();
+      unsubTrx();
+      unsubAgenda();
+    };
+  }, []);
+
   // Profile Handlers
-  const handleSaveProfil = (updated: ProfilSekolahData) => {
+  const handleSaveProfil = async (updated: ProfilSekolahData) => {
     setProfilSekolah(updated);
     try {
       localStorage.setItem('sias_profil_sekolah', JSON.stringify(updated));
+      await saveProfilSekolahCloud(updated);
     } catch (e) {
-      console.warn('Gagal menyimpan profil ke local storage', e);
+      console.warn('Gagal menyimpan profil ke cloud:', e);
     }
   };
 
-  const handleResetDefaultProfil = () => {
+  const handleResetDefaultProfil = async () => {
+    const defaultData = PROFIL_SEKOLAH as unknown as ProfilSekolahData;
+    setProfilSekolah(defaultData);
     try {
       localStorage.removeItem('sias_profil_sekolah');
+      await saveProfilSekolahCloud(defaultData);
     } catch (e) {
       console.warn(e);
     }
-    setProfilSekolah(PROFIL_SEKOLAH as unknown as ProfilSekolahData);
   };
 
   // Student Handlers
-  const handleAddSiswa = (siswa: Siswa) => {
+  const handleAddSiswa = async (siswa: Siswa) => {
     setSiswaList(prev => [siswa, ...prev]);
+    await saveSiswaCloud(siswa);
   };
 
-  const handleUpdateSiswa = (siswa: Siswa) => {
+  const handleUpdateSiswa = async (siswa: Siswa) => {
     setSiswaList(prev => prev.map(s => s.id === siswa.id ? siswa : s));
+    await saveSiswaCloud(siswa);
   };
 
-  const handleDeleteSiswa = (id: string) => {
+  const handleDeleteSiswa = async (id: string) => {
     setSiswaList(prev => prev.filter(s => s.id !== id));
+    await deleteSiswaCloud(id);
   };
 
   // Guru Handlers
@@ -211,72 +314,79 @@ export default function App() {
     }
   };
 
-  const handleAddGuru = (guru: GuruTendik) => {
+  const handleAddGuru = async (guru: GuruTendik) => {
     setGuruList(prev => {
       const updated = [guru, ...prev];
       saveGuruListToStorage(updated);
       return updated;
     });
+    await saveGuruCloud(guru);
   };
 
-  const handleUpdateGuru = (guru: GuruTendik) => {
+  const handleUpdateGuru = async (guru: GuruTendik) => {
     setGuruList(prev => {
       const updated = prev.map(g => g.id === guru.id ? guru : g);
       saveGuruListToStorage(updated);
       return updated;
     });
+    await saveGuruCloud(guru);
   };
 
-  const handleDeleteGuru = (id: string) => {
+  const handleDeleteGuru = async (id: string) => {
     setGuruList(prev => {
       const updated = prev.filter(g => g.id !== id);
       saveGuruListToStorage(updated);
       return updated;
     });
+    await deleteGuruCloud(id);
   };
 
-  const handleBatchImportGuru = (imported: GuruTendik[], mode: 'append' | 'replace') => {
-    setGuruList(prev => {
-      let updated: GuruTendik[];
-      if (mode === 'replace') {
-        updated = [...imported];
-      } else {
-        // Mode append: hindari duplikasi ID
-        const existingIds = new Set(prev.map(g => g.id));
-        const filteredImport = imported.filter(g => !existingIds.has(g.id));
-        updated = [...filteredImport, ...prev];
-      }
-      saveGuruListToStorage(updated);
-      return updated;
-    });
+  const handleBatchImportGuru = async (imported: GuruTendik[], mode: 'append' | 'replace') => {
+    let updated: GuruTendik[];
+    if (mode === 'replace') {
+      updated = [...imported];
+    } else {
+      const existingIds = new Set(guruList.map(g => g.id));
+      const filteredImport = imported.filter(g => !existingIds.has(g.id));
+      updated = [...filteredImport, ...guruList];
+    }
+    setGuruList(updated);
+    saveGuruListToStorage(updated);
+    await batchImportGuruCloud(updated, mode);
   };
 
   // Surat Handlers
-  const handleAddSurat = (surat: SuratResmi) => {
+  const handleAddSurat = async (surat: SuratResmi) => {
     setSuratList(prev => [surat, ...prev]);
+    await saveSuratCloud(surat);
   };
 
   // Dokumen Handlers
-  const handleAddDokumen = (doc: DokumenSekolah) => {
-    setDokumenList(prev => [doc, ...prev]);
+  const handleAddDokumen = async (docItem: DokumenSekolah) => {
+    setDokumenList(prev => [docItem, ...prev]);
+    await saveDokumenCloud(docItem);
   };
 
-  const handleUpdateDokumen = (doc: DokumenSekolah) => {
-    setDokumenList(prev => prev.map(d => d.id === doc.id ? doc : d));
+  const handleUpdateDokumen = async (docItem: DokumenSekolah) => {
+    setDokumenList(prev => prev.map(d => d.id === docItem.id ? docItem : d));
+    await saveDokumenCloud(docItem);
   };
 
-  const handleDeleteDokumen = (id: string) => {
+  const handleDeleteDokumen = async (id: string) => {
     setDokumenList(prev => prev.filter(d => d.id !== id));
+    await deleteDokumenCloud(id);
   };
 
   // Transaksi Handlers
-  const handleAddTransaksi = (trx: TransaksiKeuangan) => {
+  const handleAddTransaksi = async (trx: TransaksiKeuangan) => {
     setTransaksiList(prev => [trx, ...prev]);
+    await saveTransaksiCloud(trx);
   };
 
   // Agenda Handlers
-  const handleAddAgenda = (ag: AgendaSekolah) => {
+  const handleAddAgenda = async (ag: AgendaSekolah) => {
     setAgendaList(prev => [ag, ...prev]);
+    await saveAgendaCloud(ag);
   };
 
   // Custom Menu Handlers
@@ -296,7 +406,7 @@ export default function App() {
     }
   };
 
-  const handleSaveCustomMenu = (menu: CustomMenu) => {
+  const handleSaveCustomMenu = async (menu: CustomMenu) => {
     setCustomMenus(prev => {
       const exists = prev.some(m => m.id === menu.id);
       const updated = exists ? prev.map(m => m.id === menu.id ? menu : m) : [...prev, menu];
@@ -304,9 +414,10 @@ export default function App() {
       return updated;
     });
     setActiveTab(menu.id);
+    await saveCustomMenuCloud(menu);
   };
 
-  const handleDeleteCustomMenu = (id: string) => {
+  const handleDeleteCustomMenu = async (id: string) => {
     setCustomMenus(prev => {
       const updated = prev.filter(m => m.id !== id);
       saveCustomMenusToStorage(updated);
@@ -320,23 +431,26 @@ export default function App() {
     if (activeTab === id) {
       setActiveTab('profil');
     }
+    await deleteCustomMenuCloud(id);
   };
 
-  const handleSaveCustomItem = (item: CustomMenuItem) => {
+  const handleSaveCustomItem = async (item: CustomMenuItem) => {
     setCustomMenuItems(prev => {
       const exists = prev.some(i => i.id === item.id);
       const updated = exists ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
       saveCustomItemsToStorage(updated);
       return updated;
     });
+    await saveCustomMenuItemCloud(item);
   };
 
-  const handleDeleteCustomItem = (id: string) => {
+  const handleDeleteCustomItem = async (id: string) => {
     setCustomMenuItems(prev => {
       const updated = prev.filter(i => i.id !== id);
       saveCustomItemsToStorage(updated);
       return updated;
     });
+    await deleteCustomMenuItemCloud(id);
   };
 
   const getBreadcrumbTitle = () => {
