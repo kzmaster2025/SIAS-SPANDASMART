@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { Siswa } from '../types';
 import {
   Search,
@@ -9,8 +10,11 @@ import {
   Trash2,
   Users,
   CheckCircle2,
-  X
+  X,
+  FileSpreadsheet,
+  Upload
 } from 'lucide-react';
+import { ImportSiswaExcelModal } from './ImportSiswaExcelModal';
 
 interface AdministrasiKesiswaanProps {
   siswaList: Siswa[];
@@ -18,6 +22,7 @@ interface AdministrasiKesiswaanProps {
   onUpdateSiswa: (siswa: Siswa) => void;
   onDeleteSiswa: (id: string) => void;
   onPrintKartuPelajar: (siswa: Siswa) => void;
+  onBatchImportSiswa?: (imported: Siswa[], mode: 'append' | 'replace') => void;
 }
 
 export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
@@ -25,12 +30,14 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
   onAddSiswa,
   onUpdateSiswa,
   onDeleteSiswa,
-  onPrintKartuPelajar
+  onPrintKartuPelajar,
+  onBatchImportSiswa
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTingkat, setFilterTingkat] = useState<string>('all');
   const [filterKelas, setFilterKelas] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingSiswa, setEditingSiswa] = useState<Siswa | null>(null);
 
   // Form State
@@ -112,6 +119,57 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
     setIsModalOpen(false);
   };
 
+  const handleImportSuccess = (imported: Siswa[], mode: 'append' | 'replace') => {
+    if (onBatchImportSiswa) {
+      onBatchImportSiswa(imported, mode);
+    } else {
+      imported.forEach(s => onAddSiswa(s));
+    }
+  };
+
+  const exportExcel = () => {
+    const exportData = filteredSiswa.map((s, index) => ({
+      No: index + 1,
+      NISN: s.nisn,
+      NIS: s.nis,
+      'Nama Lengkap': s.nama,
+      Kelas: s.kelas,
+      Tingkat: s.tingkat,
+      'Jenis Kelamin': s.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan',
+      'Tempat Lahir': s.tempatLahir,
+      'Tanggal Lahir': s.tanggalLahir,
+      Agama: s.agama,
+      'Alamat Domisili': s.alamat,
+      'Nama Ayah': s.namaAyah,
+      'Nama Ibu': s.namaIbu,
+      'Kontak Ortu': s.kontakOrtu,
+      Status: s.status
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws['!cols'] = [
+      { wch: 5 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 28 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 34 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 16 },
+      { wch: 14 }
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Buku_Induk_Siswa');
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Buku_Induk_Siswa_SMPN2_Sukabumi_${today}.xlsx`);
+  };
+
   const exportCSV = () => {
     const headers = ['NISN', 'NIS', 'Nama Lengkap', 'Kelas', 'JK', 'Tempat Lahir', 'Tgl Lahir', 'Agama', 'Alamat', 'Nama Ayah', 'Nama Ibu', 'Kontak Ortu', 'Status'];
     const rows = filteredSiswa.map(s => [
@@ -151,23 +209,40 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
             <span aria-hidden="true">·</span>
             <span>SMP Negeri 2 Kota Sukabumi</span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Administrasi Peserta Didik
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <span>Administrasi Peserta Didik</span>
+            <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+              SIAS Siswa
+            </span>
           </h1>
           <p className="text-xs text-slate-600 mt-0.5">
             Pengelolaan data induk siswa, mutasi, pencetakan kartu pelajar digital, dan pelaporan Dapodik.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
-            onClick={exportCSV}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+            type="button"
+            onClick={exportExcel}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors shadow-2xs cursor-pointer"
+            title="Ekspor seluruh data siswa ke file Excel (.xlsx)"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Ekspor CSV</span>
+            <span>Ekspor Excel</span>
           </button>
+
           <button
+            type="button"
+            onClick={() => setIsImportModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-xs cursor-pointer"
+            title="Unggah dan impor data peserta didik dari berkas Excel (.xlsx / .xls / .csv)"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
+            <span>Impor dari Excel</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleOpenAdd}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
           >
@@ -506,6 +581,14 @@ export const AdministrasiKesiswaan: React.FC<AdministrasiKesiswaanProps> = ({
           </div>
         </div>
       )}
+
+      {/* Excel / CSV Student Import Modal */}
+      <ImportSiswaExcelModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        existingSiswaList={siswaList}
+        onImportSuccess={handleImportSuccess}
+      />
     </div>
   );
 };

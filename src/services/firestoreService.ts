@@ -310,6 +310,30 @@ export async function deleteSiswaCloud(id: string): Promise<void> {
   }
 }
 
+export async function batchImportSiswaCloud(imported: Siswa[], mode: 'append' | 'replace'): Promise<void> {
+  try {
+    if (mode === 'replace') {
+      const existing = await getDocs(collection(db, 'siswa'));
+      const delBatch = writeBatch(db);
+      existing.forEach((d) => delBatch.delete(d.ref));
+      await delBatch.commit();
+    }
+
+    // Firestore batch limit is 500 operations per batch, safely chunk by 400
+    const chunkSize = 400;
+    for (let i = 0; i < imported.length; i += chunkSize) {
+      const chunk = imported.slice(i, i + chunkSize);
+      const addBatch = writeBatch(db);
+      chunk.forEach((s) => {
+        addBatch.set(doc(db, 'siswa', s.id), s);
+      });
+      await addBatch.commit();
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'siswa');
+  }
+}
+
 export async function saveGuruCloud(guru: GuruTendik): Promise<void> {
   const path = `guru/${guru.id}`;
   try {

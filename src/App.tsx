@@ -43,6 +43,7 @@ import {
   saveProfilSekolahCloud,
   saveSiswaCloud,
   deleteSiswaCloud,
+  batchImportSiswaCloud,
   saveGuruCloud,
   deleteGuruCloud,
   batchImportGuruCloud,
@@ -303,6 +304,24 @@ export default function App() {
   const handleDeleteSiswa = async (id: string) => {
     setSiswaList(prev => prev.filter(s => s.id !== id));
     await deleteSiswaCloud(id);
+  };
+
+  const handleBatchImportSiswa = async (imported: Siswa[], mode: 'append' | 'replace') => {
+    let updated: Siswa[];
+    if (mode === 'replace') {
+      updated = [...imported];
+    } else {
+      const existingIds = new Set(siswaList.map(s => s.id));
+      const filteredImport = imported.filter(s => !existingIds.has(s.id));
+      updated = [...filteredImport, ...siswaList];
+    }
+    setSiswaList(updated);
+    try {
+      localStorage.setItem('sias_siswa_list', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Gagal menyimpan data siswa ke local storage', e);
+    }
+    await batchImportSiswaCloud(updated, mode);
   };
 
   // Guru Handlers
@@ -584,6 +603,7 @@ export default function App() {
               onUpdateSiswa={handleUpdateSiswa}
               onDeleteSiswa={handleDeleteSiswa}
               onPrintKartuPelajar={(siswa) => setSelectedStudentForCard(siswa)}
+              onBatchImportSiswa={handleBatchImportSiswa}
             />
           )}
 
