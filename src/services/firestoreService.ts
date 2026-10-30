@@ -400,6 +400,15 @@ export async function saveSuratCloud(surat: SuratResmi): Promise<void> {
   }
 }
 
+export async function deleteSuratCloud(id: string): Promise<void> {
+  const path = `surat/${id}`;
+  try {
+    await deleteDoc(doc(db, 'surat', id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
 export async function saveTransaksiCloud(trx: TransaksiKeuangan): Promise<void> {
   const path = `transaksi/${trx.id}`;
   try {

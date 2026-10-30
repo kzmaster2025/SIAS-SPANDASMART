@@ -52,6 +52,7 @@ import {
   saveDokumenCloud,
   deleteDokumenCloud,
   saveSuratCloud,
+  deleteSuratCloud,
   saveTransaksiCloud,
   saveAgendaCloud,
   saveCustomMenuCloud,
@@ -317,7 +318,14 @@ export default function App() {
     });
 
     const unsubSurat = subscribeSurat((sr) => {
-      setSuratList(sr);
+      if (sr && sr.length > 0) {
+        setSuratList(sr);
+        try {
+          localStorage.setItem('sias_surat_list', JSON.stringify(sr));
+        } catch (e) {
+          console.warn(e);
+        }
+      }
     });
 
     const unsubTrx = subscribeTransaksi((trx) => {
@@ -566,8 +574,52 @@ export default function App() {
       setIsLoginModalOpen(true);
       return;
     }
-    setSuratList(prev => [surat, ...prev]);
+    setSuratList(prev => {
+      const updated = [surat, ...prev];
+      try {
+        localStorage.setItem('sias_surat_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
     await saveSuratCloud(surat);
+  };
+
+  const handleUpdateSurat = async (surat: SuratResmi) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setSuratList(prev => {
+      const updated = prev.map(s => s.id === surat.id ? surat : s);
+      try {
+        localStorage.setItem('sias_surat_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    await saveSuratCloud(surat);
+  };
+
+  const handleDeleteSurat = async (id: string) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setSuratList(prev => {
+      const updated = prev.filter(s => s.id !== id);
+      try {
+        localStorage.setItem('sias_surat_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    await deleteSuratCloud(id);
   };
 
   // Dokumen Handlers
@@ -900,6 +952,8 @@ export default function App() {
               siswaList={siswaList}
               guruList={guruList}
               onAddSurat={handleAddSurat}
+              onUpdateSurat={handleUpdateSurat}
+              onDeleteSurat={handleDeleteSurat}
               onPrintSurat={(surat) => setSelectedSuratForPrint(surat)}
               isAdmin={isAdmin}
               onOpenAdminLogin={() => {
