@@ -17,7 +17,8 @@ import {
   AgendaSekolah,
   ProfilSekolahData,
   CustomMenu,
-  CustomMenuItem
+  CustomMenuItem,
+  RaporSiswa
 } from '../types';
 import {
   INITIAL_SISWA,
@@ -462,3 +463,73 @@ export async function deleteCustomMenuItemCloud(itemId: string): Promise<void> {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
 }
+
+// -------------------------------------------------------------
+// Rapor & Asesmen Kurikulum Merdeka Cloud Persistence
+// -------------------------------------------------------------
+
+export function subscribeRapor(onUpdate: (rapors: Record<string, RaporSiswa>) => void): () => void {
+  const colRef = collection(db, 'rapor');
+  return onSnapshot(
+    colRef,
+    async (snapshot) => {
+      if (!snapshot.empty) {
+        const store: Record<string, RaporSiswa> = {};
+        snapshot.forEach((d) => {
+          store[d.id] = d.data() as RaporSiswa;
+        });
+        onUpdate(store);
+      }
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, 'rapor');
+    }
+  );
+}
+
+export async function saveRaporCloud(rapor: RaporSiswa): Promise<void> {
+  const path = `rapor/${rapor.siswaId}`;
+  try {
+    await setDoc(doc(db, 'rapor', rapor.siswaId), rapor);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+// -------------------------------------------------------------
+// Presensi Kehadiran Harian Cloud Persistence
+// -------------------------------------------------------------
+
+export function subscribePresensi(
+  onUpdate: (data: Record<string, { status: Record<string, 'H' | 'S' | 'I' | 'A'>; keterangan: Record<string, string> }>) => void
+): () => void {
+  const colRef = collection(db, 'presensi');
+  return onSnapshot(
+    colRef,
+    async (snapshot) => {
+      if (!snapshot.empty) {
+        const store: Record<string, { status: Record<string, 'H' | 'S' | 'I' | 'A'>; keterangan: Record<string, string> }> = {};
+        snapshot.forEach((d) => {
+          store[d.id] = d.data() as { status: Record<string, 'H' | 'S' | 'I' | 'A'>; keterangan: Record<string, string> };
+        });
+        onUpdate(store);
+      }
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, 'presensi');
+    }
+  );
+}
+
+export async function savePresensiDateCloud(
+  tanggal: string,
+  data: { status: Record<string, 'H' | 'S' | 'I' | 'A'>; keterangan: Record<string, string> }
+): Promise<void> {
+  const path = `presensi/${tanggal}`;
+  try {
+    await setDoc(doc(db, 'presensi', tanggal), data);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+

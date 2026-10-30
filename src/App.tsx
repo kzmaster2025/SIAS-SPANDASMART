@@ -24,7 +24,8 @@ import {
   INITIAL_TRANSAKSI,
   INITIAL_AGENDA,
   INITIAL_DOKUMEN,
-  PROFIL_SEKOLAH
+  PROFIL_SEKOLAH,
+  MOCK_RAPOR_CONTOH
 } from './data/mockData';
 import {
   INITIAL_CUSTOM_MENUS,
@@ -55,7 +56,11 @@ import {
   saveCustomMenuCloud,
   deleteCustomMenuCloud,
   saveCustomMenuItemCloud,
-  deleteCustomMenuItemCloud
+  deleteCustomMenuItemCloud,
+  subscribeRapor,
+  saveRaporCloud,
+  subscribePresensi,
+  savePresensiDateCloud
 } from './services/firestoreService';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -134,6 +139,28 @@ export default function App() {
   const [dokumenList, setDokumenList] = useState<DokumenSekolah[]>(INITIAL_DOKUMEN);
   const [transaksiList, setTransaksiList] = useState<TransaksiKeuangan[]>(INITIAL_TRANSAKSI);
   const [agendaList, setAgendaList] = useState<AgendaSekolah[]>(INITIAL_AGENDA);
+
+  // Rapor & Asesmen Store
+  const [raporStore, setRaporStore] = useState<Record<string, RaporSiswa>>(() => {
+    try {
+      const saved = localStorage.getItem('sias_rapor_store');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Gagal memuat cache rapor:', e);
+    }
+    return { 'sis-01': MOCK_RAPOR_CONTOH };
+  });
+
+  // Presensi Kehadiran Store (Keyed by date YYYY-MM-DD)
+  const [presensiStore, setPresensiStore] = useState<Record<string, { status: Record<string, 'H' | 'S' | 'I' | 'A'>; keterangan: Record<string, string> }>>(() => {
+    try {
+      const saved = localStorage.getItem('sias_presensi_store');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Gagal memuat cache presensi:', e);
+    }
+    return {};
+  });
 
   // Custom Menus & Multimedia/Links Stores
   const [customMenus, setCustomMenus] = useState<CustomMenu[]>(() => {
@@ -255,6 +282,24 @@ export default function App() {
       setAgendaList(ag);
     });
 
+    const unsubRapor = subscribeRapor((r) => {
+      setRaporStore(prev => ({ ...prev, ...r }));
+      try {
+        localStorage.setItem('sias_rapor_store', JSON.stringify(r));
+      } catch (e) {
+        console.warn(e);
+      }
+    });
+
+    const unsubPresensi = subscribePresensi((p) => {
+      setPresensiStore(prev => ({ ...prev, ...p }));
+      try {
+        localStorage.setItem('sias_presensi_store', JSON.stringify(p));
+      } catch (e) {
+        console.warn(e);
+      }
+    });
+
     return () => {
       unsubProfil();
       unsubGuru();
@@ -265,6 +310,8 @@ export default function App() {
       unsubSurat();
       unsubTrx();
       unsubAgenda();
+      unsubRapor();
+      unsubPresensi();
     };
   }, []);
 
@@ -282,6 +329,45 @@ export default function App() {
     } catch (e) {
       console.warn('Gagal menyimpan profil ke cloud:', e);
     }
+  };
+
+  const handleSaveRapor = async (rapor: RaporSiswa) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setRaporStore(prev => {
+      const updated = { ...prev, [rapor.siswaId]: rapor };
+      try {
+        localStorage.setItem('sias_rapor_store', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    await saveRaporCloud(rapor);
+  };
+
+  const handleSavePresensi = async (
+    tanggal: string,
+    data: { status: Record<string, 'H' | 'S' | 'I' | 'A'>; keterangan: Record<string, string> }
+  ) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setPresensiStore(prev => {
+      const updated = { ...prev, [tanggal]: data };
+      try {
+        localStorage.setItem('sias_presensi_store', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    await savePresensiDateCloud(tanggal, data);
   };
 
   const handleResetDefaultProfil = async () => {
@@ -741,6 +827,8 @@ export default function App() {
                 setLoginModalMode('login');
                 setIsLoginModalOpen(true);
               }}
+              raporStore={raporStore}
+              onSaveRapor={handleSaveRapor}
             />
           )}
 
@@ -752,6 +840,8 @@ export default function App() {
                 setLoginModalMode('login');
                 setIsLoginModalOpen(true);
               }}
+              presensiStore={presensiStore}
+              onSavePresensi={handleSavePresensi}
             />
           )}
 

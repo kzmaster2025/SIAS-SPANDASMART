@@ -65,5 +65,17 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isValidId(itemId);
     }
+
+    // Rapor dan Asesmen Siswa Kurikulum Merdeka
+    match /rapor/{raporId} {
+      allow read: if true;
+      allow write: if isValidId(raporId);
+    }
+
+    // Presensi dan Kehadiran Harian Siswa
+    match /presensi/{presensiId} {
+      allow read: if true;
+      allow write: if isValidId(presensiId);
+    }
   }
 }
