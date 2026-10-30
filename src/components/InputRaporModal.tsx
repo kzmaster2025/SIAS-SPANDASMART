@@ -23,6 +23,7 @@ interface InputRaporModalProps {
   currentSiswaId: string;
   existingRapor: RaporSiswa | null;
   onSaveRapor: (rapor: RaporSiswa) => void;
+  initialTab?: 'mapel' | 'kokurikuler' | 'ekskul';
 }
 
 const DEFAULT_MAPEL_TEMPLATES: NilaiMapel[] = [
@@ -134,9 +135,10 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
   siswaList,
   currentSiswaId,
   existingRapor,
-  onSaveRapor
+  onSaveRapor,
+  initialTab = 'mapel'
 }) => {
-  const [modalTab, setModalTab] = useState<'mapel' | 'kokurikuler' | 'ekskul'>('kokurikuler');
+  const [modalTab, setModalTab] = useState<'mapel' | 'kokurikuler' | 'ekskul'>(initialTab);
   const [targetSiswaId, setTargetSiswaId] = useState<string>(currentSiswaId || siswaList[0]?.id || '');
   const [semester, setSemester] = useState<'Ganjil' | 'Genap'>(existingRapor?.semester || 'Ganjil');
   const [tahunAjaran, setTahunAjaran] = useState<string>(existingRapor?.tahunAjaran || '2025/2026');
@@ -150,6 +152,9 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
 
   // Sync state on open or change
   useEffect(() => {
+    if (isOpen && initialTab) {
+      setModalTab(initialTab);
+    }
     if (existingRapor) {
       setSemester(existingRapor.semester);
       setTahunAjaran(existingRapor.tahunAjaran);

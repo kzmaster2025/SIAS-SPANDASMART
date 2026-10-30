@@ -200,6 +200,40 @@ export const INITIAL_SISWA: Siswa[] = [
     namaIbu: 'Lilis Mardiana',
     kontakOrtu: '081988776655',
     status: 'Aktif'
+  },
+  {
+    id: 'sis-09',
+    nisn: '3122000659',
+    nis: '3122000659',
+    nama: 'Zidan Vicki Nugraha',
+    kelas: '9 K',
+    tingkat: '9',
+    jenisKelamin: 'L',
+    tempatLahir: 'Sukabumi',
+    tanggalLahir: '2010-08-15',
+    agama: 'Islam',
+    alamat: 'Jalan Selabintana, Cikole, Kota Sukabumi',
+    namaAyah: 'H. Vicki Nugraha',
+    namaIbu: 'Hj. Rohimah',
+    kontakOrtu: '081234567890',
+    status: 'Aktif'
+  },
+  {
+    id: 'sis-10',
+    nisn: '0126191596',
+    nis: '2526.07.004',
+    nama: 'ADELIA ANGGRAINI',
+    kelas: 'Kelas VII A',
+    tingkat: '7',
+    jenisKelamin: 'P',
+    tempatLahir: 'Sukabumi',
+    tanggalLahir: '2012-05-10',
+    agama: 'Islam',
+    alamat: 'Jl. Ir. H. Juanda No. 14, Kota Sukabumi',
+    namaAyah: 'H. Anggraini',
+    namaIbu: 'Hj. Nurbaeti',
+    kontakOrtu: '085711223344',
+    status: 'Aktif'
   }
 ];
 
@@ -333,11 +367,12 @@ export const MOCK_RAPOR_CONTOH: RaporSiswa = {
   siswaId: 'sis-01',
   semester: 'Ganjil',
   tahunAjaran: '2025/2026',
-  kehadiran: { sakit: 1, izin: 0, alpa: 0 },
-  catatanWaliKelas: 'Alif menunjukkan kesungguhan dan antusiasme tinggi dalam pembelajaran berbasis projek (P5). Terus tingkatkan kemampuan kolaborasi dan kepemimpinan di kelas.',
+  kehadiran: { sakit: 0, izin: 0, alpa: 0 },
+  catatanWaliKelas: 'Peserta didik menunjukkan partisipasi aktif dalam pembelajaran Kurikulum Merdeka. Terus kembangkan potensi dan integritas.',
   ekskul: [
-    { nama: 'Pramuka Penggalang', predikat: 'Sangat Baik', keterangan: 'Aktif dalam kegiatan jambore dan kepanduan' },
-    { nama: 'Robotik & Coding', predikat: 'Sangat Baik', keterangan: 'Juara 2 Lomba Web Programming Pelajar Kota Sukabumi' }
+    { nama: 'belum', predikat: 'Cukup', keterangan: 'Aktif dalam kegiatan jambore dan kepanduan' },
+    { nama: 'Belum', predikat: 'Cukup', keterangan: 'Juara 2 Lomba Web Programming Pelajar Kota Sukabumi' },
+    { nama: 'Ekstrakurikuler Baru', predikat: 'Cukup', keterangan: 'Berpartisipasi aktif dalam latihan rutin' }
   ],
   kokurikuler: getDefaultKokurikuler(),
   nilai: [
@@ -406,9 +441,9 @@ export const MOCK_RAPOR_CONTOH: RaporSiswa = {
       namaMapel: 'Bahasa Inggris',
       guruPengampu: 'Sri Wahyuni, S.Pd.',
       kkm: 75,
-      formatif: 87,
-      sumatif: 89,
-      nilaiAkhir: 88,
+      formatif: 0,
+      sumatif: 0,
+      nilaiAkhir: 0,
       capaianKompetensi: 'Fluent in expressing self-introduction, giving instruction, and descriptive procedural texts.'
     },
     {
@@ -416,9 +451,9 @@ export const MOCK_RAPOR_CONTOH: RaporSiswa = {
       namaMapel: 'Informatika',
       guruPengampu: 'Wildan Ramdani, S.Kom., Gr.',
       kkm: 75,
-      formatif: 95,
-      sumatif: 96,
-      nilaiAkhir: 96,
+      formatif: 0,
+      sumatif: 0,
+      nilaiAkhir: 0,
       capaianKompetensi: 'Sangat mahir berpikir komputasional, algoritma flowchart, dan pemrograman dasar visual scratch.'
     },
     {
@@ -426,10 +461,146 @@ export const MOCK_RAPOR_CONTOH: RaporSiswa = {
       namaMapel: 'Muatan Lokal Bahasa Sunda',
       guruPengampu: 'Cecep Sunandar, S.Pd., M.Si.',
       kkm: 75,
+      formatif: 0,
+      sumatif: 0,
+      nilaiAkhir: 0,
+      capaianKompetensi: 'Mahir ngalarapkeun undak-usuk basa Sunda dina paguneman sapopoe sarta maca aksara Sunda.'
+    }
+  ]
+};
+
+export const RAPOR_ADELIA: RaporSiswa = {
+  siswaId: 'sis-10',
+  semester: 'Genap',
+  tahunAjaran: '2025/2026',
+  fase: 'D',
+  kenaikanKelas: 'Naik ke kelas VIII',
+  titimangsa: 'Sukabumi, 24 Juni 2026',
+  kehadiran: { sakit: 2, izin: 0, alpa: 0 },
+  catatanWaliKelas: 'Selamat atas keberhasilanmu naik ke kelas VIII. Tingkatkan terus motivasi dalam belajar serta kedisiplinan untuk meraih prestasi yang lebih tinggi.',
+  waliKelas: {
+    nama: 'Gina Risdiyani, S.Si',
+    nip: '198609132022212014'
+  },
+  kepalaSekolah: {
+    nama: 'ARHAM, S.Pd., M.M.Pd',
+    nip: '196903261998021002'
+  },
+  ekskul: [
+    { nama: 'Ekstrakurikuler Tari', predikat: 'Sangat Baik', keterangan: 'Mempunyai keterampilan menari yang baik. Terus tingkatkan potensi diri, untuk mengembangkan bakat yang telah dimiliki.' }
+  ],
+  kokurikuler: getDefaultKokurikuler(),
+  narasiKokurikuler: `Pada semester ini, ananda menunjukkan capaian yang baik dalam penguatan profil lulusan, yang ditunjukkan melalui kegiatan kokurikuler "Eksplorasi keberagaman budaya lokal dan nasional" serta "melestarikan kekayaan warisan budaya Indonesia".\nPada dimensi kewargaan, ananda cakap dalam subdimensi kewargaan lokal.\nPada dimensi kreativitas, ananda cakap dalam subdimensi gagasan baru.\nPada dimensi kolaborasi, ananda cakap dalam subdimensi kerja sama.`,
+  nilai: [
+    {
+      kodeMapel: 'PAI',
+      namaMapel: 'Pendidikan Agama Islam dan Budi Pekerti',
+      guruPengampu: 'H. Yusuf Hidayat, M.Pd.',
+      kkm: 75,
+      formatif: 90,
+      sumatif: 90,
+      nilaiAkhir: 90,
+      capaianKompetensi: 'Mencapai Kompetensi dengan sangat baik dalam hal Memahami Nilai-nilai yang dapat dipetik pada Penciptaan dan Pengaturan Alam Semesta, Menyajikan perilaku beriman kepada Malaikat , Perkembangan ilmu pengetahuan pada Masa Bani Umayyah di Andalusia, Menciptakan harmoni sosial dengan menjauhi ghibah dan menumbuhkan sikap tabayyun..\nPerlu peningkatan dalam hal Menunjukkan sikap disiplin dan saling menghargai dalam menjalankan ibadah..'
+    },
+    {
+      kodeMapel: 'PPKN',
+      namaMapel: 'Pendidikan Pancasila',
+      guruPengampu: 'Dra. Hj. Nurbaeti',
+      kkm: 75,
+      formatif: 83,
+      sumatif: 83,
+      nilaiAkhir: 83,
+      capaianKompetensi: 'Mencapai Kompetensi dengan sangat baik dalam hal Persatuan dalam keberagaman suku, agama, ras, dan antargolongan dalam kehidupan bermasyarakat., sikap cinta tanah air, rela berkorban, toleransi, dan kerja sama..\nPerlu peningkatan dalam hal wilayah negara kesatuan Republik Indonesia..'
+    },
+    {
+      kodeMapel: 'BIN',
+      namaMapel: 'Bahasa Indonesia',
+      guruPengampu: 'Rina Marlina, S.Pd.',
+      kkm: 75,
       formatif: 88,
       sumatif: 88,
       nilaiAkhir: 88,
-      capaianKompetensi: 'Mahir ngalarapkeun undak-usuk basa Sunda dina paguneman sapopoe sarta maca aksara Sunda.'
+      capaianKompetensi: 'Mencapai Kompetensi dengan sangat baik dalam hal menganalisis unsur-unsur kebahasaan berita dengan menandai jenis kalimat dalam teks dengan teliti, Menggali perbedaan dan persamaan bagian-bagian pada buku fiksi dan nonfiksi dengan teliti..\nPerlu peningkatan dalam hal Menulis surat pribadi dan resmi menggunakan pilihan kata yang tepat.'
+    },
+    {
+      kodeMapel: 'MAT',
+      namaMapel: 'Matematika (Umum)',
+      guruPengampu: 'Dra. Hj. Nunung Nurbaeti, M.M.Pd.',
+      kkm: 75,
+      formatif: 85,
+      sumatif: 85,
+      nilaiAkhir: 85,
+      capaianKompetensi: 'Mencapai Kompetensi dengan baik dalam hal Menyelesaikan masalah hubungan antar sudut, pemahaman konsep dasar kesebangunan, Menyatakan masalah sehari-hari ke bentuk PLSV dan PtLSV serta menentukan penyelesaiannya, Melakukan operasi hitung bentuk aljabar, Menyelesaikan masalah bentuk aljabar.'
+    },
+    {
+      kodeMapel: 'IPA',
+      namaMapel: 'Ilmu Pengetahuan Alam (IPA)',
+      guruPengampu: 'Cecep Sunandar, S.Pd., M.Si.',
+      kkm: 75,
+      formatif: 85,
+      sumatif: 85,
+      nilaiAkhir: 85,
+      capaianKompetensi: 'Mencapai Kompetensi dengan sangat baik dalam hal menelaah hasil identifikasi makhluk hidup sesuai dengan karakteristiknya, menganalisis posisi relatif bumi-bulan-matahari dalam sistem tata surya untuk menjelaskan fenomena alam dan perubahan iklim.\nPerlu peningkatan dalam hal menganalisis interaksi antar makhluk hidup dan lingkungan dalam merancang upaya untuk mencegah dan mengatasi perubahan iklim.'
+    },
+    {
+      kodeMapel: 'IPS',
+      namaMapel: 'Ilmu Pengetahuan Sosial (IPS)',
+      guruPengampu: 'Dedi Suhendi, S.Sos.',
+      kkm: 75,
+      formatif: 84,
+      sumatif: 84,
+      nilaiAkhir: 84,
+      capaianKompetensi: 'Mencapai Kompetensi dengan sangat baik dalam hal Mengidentifikasi kegiatan ekonomi masyarakat dan Literasi Keuangan, Menganalisis pemanfaatan dan pelestarian potensi sumber daya alam, Menguraikan aktivitas kehidupan masyarakat masa Hindu Buddha dan masa Islam, Mengidentifikasi Keragaman Budaya dan permasalahan kehidupan sosial budaya di masyarakat.\nPerlu peningkatan dalam hal mempelajari sejarah lokal dan toponimi wilayah.'
+    },
+    {
+      kodeMapel: 'ING',
+      namaMapel: 'Bahasa Inggris',
+      guruPengampu: 'Sri Wahyuni, S.Pd.',
+      kkm: 75,
+      formatif: 83,
+      sumatif: 83,
+      nilaiAkhir: 83,
+      capaianKompetensi: 'Perlu peningkatan dalam hal Mengidentifikasi ide utama dan informasi rinci teks deskripsi terkait study habit.'
+    },
+    {
+      kodeMapel: 'SBK',
+      namaMapel: 'Seni, Budaya dan Prakarya',
+      guruPengampu: 'Rina Marlina, S.Pd.',
+      kkm: 75,
+      formatif: 94,
+      sumatif: 94,
+      nilaiAkhir: 94,
+      capaianKompetensi: 'Mencapai Kompetensi dengan sangat baik dalam hal Mendesain (Prinsip & Elemen Desain), Apresiasi & Penciptaan Karya Seni.'
+    },
+    {
+      kodeMapel: 'PJOK',
+      namaMapel: 'Pendidikan Jasmani, Olahraga, dan Kesehatan',
+      guruPengampu: 'Cecep Sunandar, S.Pd., M.Si.',
+      kkm: 75,
+      formatif: 91,
+      sumatif: 91,
+      nilaiAkhir: 91,
+      capaianKompetensi: 'Mencapai Kompetensi dengan sangat baik dalam hal Menganalisis dan mempraktikan keterampilan aktivitas bola besar dan atletik.\nPerlu peningkatan dalam hal Menganalisis dan mempraktikan keterampilan aktivitas senam lantai dan aktivitas olahraga air..'
+    },
+    {
+      kodeMapel: 'INF',
+      namaMapel: 'Informatika',
+      guruPengampu: 'Wildan Ramdani, S.Kom., Gr.',
+      kkm: 75,
+      formatif: 92,
+      sumatif: 92,
+      nilaiAkhir: 92,
+      capaianKompetensi: 'Mencapai Kompetensi dengan sangat baik dalam hal Menerapkan analisis data pada kehidupan sehari hari, Memahami dampak sosial dari penggunaan teknologi dan informasi..'
+    },
+    {
+      kodeMapel: 'SND',
+      namaMapel: 'Muatan Lokal Bahasa Daerah',
+      guruPengampu: 'Cecep Sunandar, S.Pd., M.Si.',
+      kkm: 75,
+      formatif: 82,
+      sumatif: 82,
+      nilaiAkhir: 82,
+      capaianKompetensi: 'Mencapai Kompetensi dengan sangat baik dalam hal Mengidentifikasi dan mengomunikasikan dongeng, Mengidentifikasi dan mendeklamasikan sajak , Mengidentifikasi dan menyajikan teks aksara Sunda.'
     }
   ]
 };

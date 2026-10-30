@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Siswa, RaporSiswa, NilaiMapel, CapaianKokurikuler, PredikatKokurikuler } from '../types';
-import { MOCK_RAPOR_CONTOH } from '../data/mockData';
+import { MOCK_RAPOR_CONTOH, RAPOR_ADELIA } from '../data/mockData';
 import { DELAPAN_DIMENSI_PROFIL_LULUSAN, getDefaultKokurikuler } from '../data/dimensiProfilLulusan';
 import { InputRaporModal } from './InputRaporModal';
 import {
@@ -40,8 +40,9 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
   onSaveRapor
 }) => {
   const [selectedSiswaId, setSelectedSiswaId] = useState<string>(siswaList[0]?.id || 'sis-01');
-  const [activeTab, setActiveTab] = useState<'rapor' | 'jadwal'>('rapor');
+  const [activeTab, setActiveTab] = useState<'rapor' | 'kokurikuler' | 'jadwal'>('rapor');
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+  const [inputModalTab, setInputModalTab] = useState<'mapel' | 'kokurikuler' | 'ekskul'>('mapel');
   const [showSaveToast, setShowSaveToast] = useState(false);
 
   // Active student's rapor
@@ -59,23 +60,29 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
             : getDefaultKokurikuler()
       };
     }
+    if (siswaId === 'sis-10') {
+      return RAPOR_ADELIA;
+    }
     // Default clone of mock template
     return {
       ...MOCK_RAPOR_CONTOH,
       siswaId: siswaId,
-      kokurikuler: getDefaultKokurikuler(),
-      catatanWaliKelas: `Peserta didik menunjukkan partisipasi aktif dalam pembelajaran Kurikulum Merdeka. Terus kembangkan potensi dan integritas.`
+      kokurikuler: getDefaultKokurikuler()
     };
   };
 
   const [currentRapor, setCurrentRapor] = useState<RaporSiswa>(() => getInitialRapor(selectedSiswaId));
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Update currentRapor when selected student changes or raporStore updates
+  // Update currentRapor safely without overwriting user unsaved edits
+  const prevSiswaIdRef = React.useRef(selectedSiswaId);
   useEffect(() => {
-    if (selectedSiswaId) {
+    if (prevSiswaIdRef.current !== selectedSiswaId) {
+      prevSiswaIdRef.current = selectedSiswaId;
       setCurrentRapor(getInitialRapor(selectedSiswaId));
       setHasUnsavedChanges(false);
+    } else if (!hasUnsavedChanges) {
+      setCurrentRapor(getInitialRapor(selectedSiswaId));
     }
   }, [selectedSiswaId, raporStore]);
 
@@ -301,15 +308,24 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
           <button
             onClick={() => setActiveTab('rapor')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
-              activeTab === 'rapor' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'rapor' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Asesmen Nilai & Kokurikuler
+            Asesmen Nilai & Rapor
+          </button>
+          <button
+            onClick={() => setActiveTab('kokurikuler')}
+            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'kokurikuler' ? 'bg-white text-blue-700 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>Kokurikuler (8 Dimensi)</span>
           </button>
           <button
             onClick={() => setActiveTab('jadwal')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
-              activeTab === 'jadwal' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'jadwal' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Jadwal Pelajaran KBM
@@ -317,7 +333,7 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
         </div>
       </div>
 
-      {activeTab === 'rapor' ? (
+      {activeTab === 'rapor' && (
         <div className="space-y-6">
           {/* Ringkasan Siswa Terpilih */}
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -356,7 +372,7 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
             <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  A. Rekap Nilai Asesmen Mata Pelajaran ({currentRapor.nilai.length} Mapel)
+                  Rekap Nilai Asesmen Mata Pelajaran ({currentRapor.nilai.length} Mapel)
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {isAdmin
@@ -494,7 +510,83 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
             </div>
           </div>
 
-          {/* SECTION B: KEGIATAN KOKURIKULER (8 DIMENSI PROFIL LULUSAN) */}
+          {/* EKSTRAKURIKULER & CATATAN WALI KELAS (EXACT PREVIOUS FORM FROM USER SCREENSHOT) */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-blue-700" />
+                    <span>Kegiatan Ekstrakurikuler</span>
+                  </h4>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInputModalTab('ekskul');
+                        setIsInputModalOpen(true);
+                      }}
+                      className="text-[11px] text-blue-700 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit Ekskul</span>
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {currentRapor.ekskul.map((e, i) => (
+                    <div key={i} className="p-2.5 rounded-lg bg-white border border-slate-200">
+                      <div className="flex items-center justify-between font-semibold text-slate-900 mb-0.5">
+                        <span>{e.nama}</span>
+                        <span className="text-[11px] text-blue-700 font-mono font-bold">{e.predikat}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">{e.keterangan}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-700" />
+                    <span>Catatan Wali Kelas & Kehadiran</span>
+                  </h4>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInputModalTab('ekskul');
+                        setIsInputModalOpen(true);
+                      }}
+                      className="text-[11px] text-blue-700 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit Catatan & Absen</span>
+                    </button>
+                  )}
+                </div>
+                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-2">
+                  <div className="flex items-center gap-4 text-[11px] font-mono text-slate-600 pb-2 border-b border-slate-100">
+                    <span>Sakit: <strong className="text-blue-700">{currentRapor.kehadiran.sakit} Hari</strong></span>
+                    <span aria-hidden="true">·</span>
+                    <span>Izin: <strong className="text-amber-700">{currentRapor.kehadiran.izin} Hari</strong></span>
+                    <span aria-hidden="true">·</span>
+                    <span>Tanpa Keterangan: <strong className="text-rose-700">{currentRapor.kehadiran.alpa} Hari</strong></span>
+                  </div>
+                  <p className="text-[11px] text-slate-700 leading-relaxed italic">
+                    "{currentRapor.catatanWaliKelas}"
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB KOKURIKULER 8 DIMENSI PROFIL LULUSAN */}
+      {activeTab === 'kokurikuler' && (
+        <div className="space-y-6">
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-blue-50/60 to-indigo-50/40">
               <div className="flex items-start gap-2.5">
@@ -504,14 +596,14 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-bold text-slate-900">
-                      B. Kegiatan Kokurikuler (Asesmen 8 Dimensi Profil Lulusan)
+                      Kegiatan Kokurikuler (Asesmen 8 Dimensi Profil Lulusan)
                     </h3>
                     <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
                       Standar Kelulusan Utuh
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Penilaian karakter, integritas, dan kompetensi projek kokurikuler sesuai 8 Dimensi Profil Lulusan Kemendikdasmen.
+                    Penilaian karakter, integritas, dan kompetensi projek kokurikuler sesuai 8 Dimensi Profil Lulusan Kemendikdasmen untuk <strong>{selectedSiswa.nama}</strong> ({selectedSiswa.kelas}).
                   </p>
                 </div>
               </div>
@@ -536,11 +628,23 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setIsInputModalOpen(true)}
+                    onClick={() => {
+                      setInputModalTab('kokurikuler');
+                      setIsInputModalOpen(true);
+                    }}
                     className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-white border border-blue-300 hover:bg-blue-50 rounded-lg inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Edit Form Kokurikuler</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveAllChanges}
+                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Simpan Kokurikuler</span>
                   </button>
                 </div>
               )}
@@ -549,8 +653,6 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
             {/* 8 Dimensi Grid Cards */}
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
               {kokurikulerDisplay.map((k, idx) => {
-                const meta = DELAPAN_DIMENSI_PROFIL_LULUSAN[idx] || { nomor: idx + 1, fokus: '' };
-
                 const getBadgeColor = (p: string) => {
                   switch (p) {
                     case 'Sangat Berkembang':
@@ -655,75 +757,11 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
               })}
             </div>
           </div>
-
-          {/* SECTION C & D: EKSTRAKURIKULER & CATATAN WALI KELAS */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="p-4 bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-slate-800 flex items-center gap-2">
-                    <Award className="w-4 h-4 text-blue-700" />
-                    <span>C. Kegiatan Ekstrakurikuler</span>
-                  </h4>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => setIsInputModalOpen(true)}
-                      className="text-[11px] text-blue-700 hover:underline flex items-center gap-1 cursor-pointer font-medium"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      <span>Edit Ekskul</span>
-                    </button>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  {currentRapor.ekskul.map((e, i) => (
-                    <div key={i} className="p-2.5 rounded-lg bg-white border border-slate-200">
-                      <div className="flex items-center justify-between font-semibold text-slate-900 mb-0.5">
-                        <span>{e.nama}</span>
-                        <span className="text-[11px] text-blue-700 font-mono font-bold">{e.predikat}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500">{e.keterangan}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-slate-800 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-blue-700" />
-                    <span>D. Catatan Wali Kelas & Kehadiran</span>
-                  </h4>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => setIsInputModalOpen(true)}
-                      className="text-[11px] text-blue-700 hover:underline flex items-center gap-1 cursor-pointer font-medium"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      <span>Edit Catatan & Absen</span>
-                    </button>
-                  )}
-                </div>
-                <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-2">
-                  <div className="flex items-center gap-4 text-[11px] font-mono text-slate-600 pb-2 border-b border-slate-100">
-                    <span>Sakit: <strong className="text-blue-700">{currentRapor.kehadiran.sakit} Hari</strong></span>
-                    <span aria-hidden="true">·</span>
-                    <span>Izin: <strong className="text-amber-700">{currentRapor.kehadiran.izin} Hari</strong></span>
-                    <span aria-hidden="true">·</span>
-                    <span>Tanpa Keterangan: <strong className="text-rose-700">{currentRapor.kehadiran.alpa} Hari</strong></span>
-                  </div>
-                  <p className="text-[11px] text-slate-700 leading-relaxed italic">
-                    "{currentRapor.catatanWaliKelas}"
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
-      ) : (
-        /* Jadwal Pelajaran */
+      )}
+
+      {/* TAB JADWAL PELAJARAN */}
+      {activeTab === 'jadwal' && (
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
@@ -761,6 +799,7 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
         currentSiswaId={selectedSiswaId}
         existingRapor={currentRapor}
         onSaveRapor={handleModalSave}
+        initialTab={inputModalTab}
       />
     </div>
   );

@@ -25,7 +25,8 @@ import {
   INITIAL_AGENDA,
   INITIAL_DOKUMEN,
   PROFIL_SEKOLAH,
-  MOCK_RAPOR_CONTOH
+  MOCK_RAPOR_CONTOH,
+  RAPOR_ADELIA
 } from './data/mockData';
 import {
   INITIAL_CUSTOM_MENUS,
@@ -125,7 +126,18 @@ export default function App() {
   const [isEditProfilModalOpen, setIsEditProfilModalOpen] = useState(false);
 
   // Core Data Stores
-  const [siswaList, setSiswaList] = useState<Siswa[]>(INITIAL_SISWA);
+  const [siswaList, setSiswaList] = useState<Siswa[]>(() => {
+    try {
+      const saved = localStorage.getItem('sias_siswa_list');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Gagal memuat cache data siswa:', e);
+    }
+    return INITIAL_SISWA;
+  });
   const [guruList, setGuruList] = useState<GuruTendik[]>(() => {
     try {
       const saved = localStorage.getItem('sias_guru_list');
@@ -135,20 +147,47 @@ export default function App() {
     }
     return INITIAL_GURU;
   });
-  const [suratList, setSuratList] = useState<SuratResmi[]>(INITIAL_SURAT);
-  const [dokumenList, setDokumenList] = useState<DokumenSekolah[]>(INITIAL_DOKUMEN);
-  const [transaksiList, setTransaksiList] = useState<TransaksiKeuangan[]>(INITIAL_TRANSAKSI);
-  const [agendaList, setAgendaList] = useState<AgendaSekolah[]>(INITIAL_AGENDA);
+  const [suratList, setSuratList] = useState<SuratResmi[]>(() => {
+    try {
+      const saved = localStorage.getItem('sias_surat_list');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_SURAT;
+  });
+  const [dokumenList, setDokumenList] = useState<DokumenSekolah[]>(() => {
+    try {
+      const saved = localStorage.getItem('sias_dokumen_list');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_DOKUMEN;
+  });
+  const [transaksiList, setTransaksiList] = useState<TransaksiKeuangan[]>(() => {
+    try {
+      const saved = localStorage.getItem('sias_transaksi_list');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_TRANSAKSI;
+  });
+  const [agendaList, setAgendaList] = useState<AgendaSekolah[]>(() => {
+    try {
+      const saved = localStorage.getItem('sias_agenda_list');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_AGENDA;
+  });
 
   // Rapor & Asesmen Store
   const [raporStore, setRaporStore] = useState<Record<string, RaporSiswa>>(() => {
     try {
       const saved = localStorage.getItem('sias_rapor_store');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { 'sis-01': MOCK_RAPOR_CONTOH, 'sis-10': RAPOR_ADELIA, ...parsed };
+      }
     } catch (e) {
       console.warn('Gagal memuat cache rapor:', e);
     }
-    return { 'sis-01': MOCK_RAPOR_CONTOH };
+    return { 'sis-01': MOCK_RAPOR_CONTOH, 'sis-10': RAPOR_ADELIA };
   });
 
   // Presensi Kehadiran Store (Keyed by date YYYY-MM-DD)
@@ -245,7 +284,14 @@ export default function App() {
     });
 
     const unsubSiswa = subscribeSiswa((s) => {
-      setSiswaList(s);
+      if (s && s.length > 0) {
+        setSiswaList(s);
+        try {
+          localStorage.setItem('sias_siswa_list', JSON.stringify(s));
+        } catch (e) {
+          console.warn(e);
+        }
+      }
     });
 
     const unsubMenus = subscribeCustomMenus((m) => {
@@ -283,12 +329,15 @@ export default function App() {
     });
 
     const unsubRapor = subscribeRapor((r) => {
-      setRaporStore(prev => ({ ...prev, ...r }));
-      try {
-        localStorage.setItem('sias_rapor_store', JSON.stringify(r));
-      } catch (e) {
-        console.warn(e);
-      }
+      setRaporStore(prev => {
+        const merged = { ...prev, ...r };
+        try {
+          localStorage.setItem('sias_rapor_store', JSON.stringify(merged));
+        } catch (e) {
+          console.warn(e);
+        }
+        return merged;
+      });
     });
 
     const unsubPresensi = subscribePresensi((p) => {
