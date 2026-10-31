@@ -49,7 +49,7 @@ export const CustomMenuModal: React.FC<CustomMenuModalProps> = ({
     const newMenu: CustomMenu = {
       id: menuId,
       label: label.trim(),
-      deskripsi: deskripsi.trim() || undefined,
+      deskripsi: deskripsi.trim(),
       iconName,
       adminOnly,
       order: editingMenu ? editingMenu.order : Date.now(),

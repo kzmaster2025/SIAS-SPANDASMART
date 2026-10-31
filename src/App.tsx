@@ -885,7 +885,11 @@ export default function App() {
       saveCustomItemsToStorage(updated);
       return updated;
     });
-    await saveCustomMenuItemCloud(item);
+    try {
+      await saveCustomMenuItemCloud(item);
+    } catch (e) {
+      console.warn('Gagal sinkronisasi konten kustom ke cloud:', e);
+    }
   };
 
   const handleDeleteCustomItem = async (id: string) => {

@@ -489,10 +489,26 @@ export async function deleteAgendaCloud(id: string): Promise<void> {
   }
 }
 
+// Helper to strip undefined values so Firestore setDoc does not throw errors
+export function sanitizeForFirestore<T extends Record<string, any>>(data: T): Record<string, any> {
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        clean[key] = sanitizeForFirestore(value);
+      } else {
+        clean[key] = value;
+      }
+    }
+  }
+  return clean;
+}
+
 export async function saveCustomMenuCloud(menu: CustomMenu): Promise<void> {
   const path = `custom_menus/${menu.id}`;
   try {
-    await setDoc(doc(db, 'custom_menus', menu.id), menu);
+    const cleanMenu = sanitizeForFirestore(menu);
+    await setDoc(doc(db, 'custom_menus', menu.id), cleanMenu);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -520,7 +536,8 @@ export async function deleteCustomMenuCloud(menuId: string): Promise<void> {
 export async function saveCustomMenuItemCloud(item: CustomMenuItem): Promise<void> {
   const path = `custom_items/${item.id}`;
   try {
-    await setDoc(doc(db, 'custom_items', item.id), item);
+    const cleanItem = sanitizeForFirestore(item);
+    await setDoc(doc(db, 'custom_items', item.id), cleanItem);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }

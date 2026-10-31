@@ -103,49 +103,105 @@ export const CustomItemUploadModal: React.FC<CustomItemUploadModalProps> = ({
     setConfirmDelete(false);
   }, [editingItem, isOpen]);
 
-  if (!isOpen) return null;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  // Handle Image File Upload (Convert to Base64 data URL)
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Compress image on client to fit well within Firestore 1MB doc limit & localStorage
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDimension = 1280;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(event.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          resolve(compressedDataUrl);
+        };
+        img.onerror = (err) => reject(err);
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle Image File Upload with automatic compression
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 8 * 1024 * 1024) {
-        alert('Ukuran gambar maksimal 8MB.');
+      if (!file.type.startsWith('image/')) {
+        alert('Silakan pilih berkas gambar (JPG, PNG, WEBP).');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          setGambarUrl(reader.result);
-          if (!caption) setCaption(file.name.replace(/\.[^/.]+$/, ''));
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsCompressing(true);
+        const compressed = await compressImage(file);
+        setGambarUrl(compressed);
+        if (!caption) setCaption(file.name.replace(/\.[^/.]+$/, ''));
+      } catch (err) {
+        console.error('Error compressing image:', err);
+        alert('Gagal memproses gambar. Silakan gunakan berkas gambar lainnya.');
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
-  // Handle Video File Upload (Convert to Base64 / Blob URL)
+  // Handle Video File Upload
   const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 25 * 1024 * 1024) {
-        alert('Ukuran berkas video upload langsung maksimal 25MB. Untuk video berdurasi panjang, disarankan menempelkan tautan YouTube atau Google Drive agar lebih cepat.');
+      if (file.size > 1024 * 1024) {
+        alert('Ukuran berkas video upload langsung maksimal 1MB untuk penyimpanan cloud. Untuk video kegiatan durasi penuh, sangat disarankan menempelkan tautan YouTube atau Google Drive (pilih opsi "Link YouTube / Drive / URL").');
         return;
       }
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
           setVideoUrl(reader.result);
-          if (!videoDuration) setVideoDuration('Video Lokal');
+          if (!videoDuration) setVideoDuration('Video Singkat');
         }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!judul.trim()) return;
+
+    if (tipe === 'tautan' && !tautanUrl.trim()) {
+      alert('Silakan masukkan alamat URL tautan (contoh: https://...)');
+      return;
+    }
+    if (tipe === 'video' && !videoUrl.trim()) {
+      alert('Silakan masukkan link URL video atau pilih berkas video');
+      return;
+    }
+    if (tipe === 'gambar' && !gambarUrl.trim()) {
+      alert('Silakan pilih berkas foto atau masukkan link URL gambar');
+      return;
+    }
 
     let processedEmbedUrl: string | undefined = undefined;
     if (tipe === 'video' && videoUrl) {
@@ -153,32 +209,40 @@ export const CustomItemUploadModal: React.FC<CustomItemUploadModalProps> = ({
       processedEmbedUrl = processed.embedUrl;
     }
 
+    // Clean data object without ANY undefined fields (Firestore throws error on undefined)
     const item: CustomMenuItem = {
       id: editingItem ? editingItem.id : `item-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       menuId,
       tipe,
       judul: judul.trim(),
       deskripsi: deskripsi.trim(),
-      kategori: kategori.trim() || undefined,
       tanggal: editingItem ? editingItem.tanggal : new Date().toISOString().split('T')[0],
       uploader: uploader.trim() || 'Admin SIAS',
-
-      // Video fields
-      videoUrl: tipe === 'video' ? videoUrl.trim() : undefined,
-      videoEmbedUrl: tipe === 'video' ? processedEmbedUrl : undefined,
-      videoDuration: tipe === 'video' ? videoDuration.trim() || undefined : undefined,
-
-      // Image fields
-      gambarUrl: tipe === 'gambar' ? gambarUrl.trim() : undefined,
-      caption: tipe === 'gambar' ? caption.trim() || undefined : undefined,
-
-      // Link fields
-      tautanUrl: tipe === 'tautan' ? tautanUrl.trim() : undefined,
-      tautanLabel: tipe === 'tautan' ? tautanLabel.trim() || 'Kunjungi Tautan' : undefined
+      ...(kategori.trim() ? { kategori: kategori.trim() } : {}),
+      ...(tipe === 'video' ? {
+        ...(videoUrl.trim() ? { videoUrl: videoUrl.trim() } : {}),
+        ...(processedEmbedUrl ? { videoEmbedUrl: processedEmbedUrl } : {}),
+        ...(videoDuration.trim() ? { videoDuration: videoDuration.trim() } : {})
+      } : {}),
+      ...(tipe === 'gambar' ? {
+        ...(gambarUrl.trim() ? { gambarUrl: gambarUrl.trim() } : {}),
+        ...(caption.trim() ? { caption: caption.trim() } : {})
+      } : {}),
+      ...(tipe === 'tautan' ? {
+        ...(tautanUrl.trim() ? { tautanUrl: tautanUrl.trim() } : {}),
+        tautanLabel: tautanLabel.trim() || 'Kunjungi Tautan'
+      } : {})
     };
 
-    onSaveItem(item);
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await onSaveItem(item);
+      onClose();
+    } catch (err) {
+      console.error('Error saat menyimpan konten:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDelete = () => {
@@ -190,6 +254,8 @@ export const CustomItemUploadModal: React.FC<CustomItemUploadModalProps> = ({
 
   // Video preview processor
   const videoPreview = tipe === 'video' && videoUrl ? processVideoUrl(videoUrl) : null;
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -617,10 +683,19 @@ export const CustomItemUploadModal: React.FC<CustomItemUploadModalProps> = ({
             </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
+              disabled={isSubmitting || isCompressing}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-lg transition-colors shadow-xs cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>{editingItem ? 'Simpan Perubahan' : 'Upload & Publikasikan'}</span>
+              <span>
+                {isCompressing
+                  ? 'Memproses Gambar...'
+                  : isSubmitting
+                  ? 'Mempublikasikan...'
+                  : editingItem
+                  ? 'Simpan Perubahan'
+                  : 'Upload & Publikasikan'}
+              </span>
             </button>
           </div>
         </form>
