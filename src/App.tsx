@@ -56,6 +56,8 @@ import {
   saveTransaksiCloud,
   deleteTransaksiCloud,
   batchImportTransaksiCloud,
+  clearAllTransaksiCloud,
+  purgeMockTransaksiCloud,
   saveAgendaCloud,
   deleteAgendaCloud,
   saveCustomMenuCloud,
@@ -168,9 +170,9 @@ export default function App() {
   const [transaksiList, setTransaksiList] = useState<TransaksiKeuangan[]>(() => {
     try {
       const saved = localStorage.getItem('sias_transaksi_list');
-      if (saved) return JSON.parse(saved);
+      if (saved !== null) return JSON.parse(saved);
     } catch {}
-    return INITIAL_TRANSAKSI;
+    return [];
   });
   const [agendaList, setAgendaList] = useState<AgendaSekolah[]>(() => {
     try {
@@ -331,8 +333,25 @@ export default function App() {
       }
     });
 
+    // Ensure mock dummy transactions that were deleted by user are purged from Firestore
+    if (!localStorage.getItem('sias_transaksi_mock_purged')) {
+      localStorage.setItem('sias_transaksi_mock_purged', 'true');
+      purgeMockTransaksiCloud();
+      setTransaksiList([]);
+      try {
+        localStorage.setItem('sias_transaksi_list', JSON.stringify([]));
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
     const unsubTrx = subscribeTransaksi((trx) => {
       setTransaksiList(trx);
+      try {
+        localStorage.setItem('sias_transaksi_list', JSON.stringify(trx));
+      } catch (e) {
+        console.warn(e);
+      }
     });
 
     const unsubAgenda = subscribeAgenda((ag) => {
@@ -729,6 +748,21 @@ export default function App() {
     await batchImportTransaksiCloud(imported);
   };
 
+  const handleClearAllTransaksi = async () => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setTransaksiList([]);
+    try {
+      localStorage.setItem('sias_transaksi_list', JSON.stringify([]));
+    } catch (e) {
+      console.warn(e);
+    }
+    await clearAllTransaksiCloud();
+  };
+
   // Agenda Handlers
   const handleAddAgenda = async (ag: AgendaSekolah) => {
     if (!isAdmin) {
@@ -1100,6 +1134,7 @@ export default function App() {
               onUpdateTransaksi={handleUpdateTransaksi}
               onDeleteTransaksi={handleDeleteTransaksi}
               onBatchImportTransaksi={handleBatchImportTransaksi}
+              onClearAllTransaksi={handleClearAllTransaksi}
               isAdmin={isAdmin}
               onOpenAdminLogin={() => {
                 setLoginModalMode('login');

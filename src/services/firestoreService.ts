@@ -182,14 +182,20 @@ export function subscribeDokumen(onUpdate: (docs: DokumenSekolah[]) => void): ()
         snapshot.forEach((d) => list.push(d.data() as DokumenSekolah));
         onUpdate(list);
       } else {
-        try {
-          const batch = writeBatch(db);
-          INITIAL_DOKUMEN.forEach((docItem) => {
-            batch.set(doc(db, 'dokumen', docItem.id), docItem);
-          });
-          await batch.commit();
-        } catch (e) {
-          console.warn('Initial dokumen seed failed:', e);
+        if (localStorage.getItem('sias_dokumen_seeded')) {
+          onUpdate([]);
+        } else {
+          localStorage.setItem('sias_dokumen_seeded', 'true');
+          try {
+            const batch = writeBatch(db);
+            INITIAL_DOKUMEN.forEach((docItem) => {
+              batch.set(doc(db, 'dokumen', docItem.id), docItem);
+            });
+            await batch.commit();
+          } catch (e) {
+            console.warn('Initial dokumen seed failed:', e);
+            onUpdate([]);
+          }
         }
       }
     },
@@ -209,14 +215,20 @@ export function subscribeSurat(onUpdate: (surat: SuratResmi[]) => void): () => v
         snapshot.forEach((d) => list.push(d.data() as SuratResmi));
         onUpdate(list);
       } else {
-        try {
-          const batch = writeBatch(db);
-          INITIAL_SURAT.forEach((s) => {
-            batch.set(doc(db, 'surat', s.id), s);
-          });
-          await batch.commit();
-        } catch (e) {
-          console.warn('Initial surat seed failed:', e);
+        if (localStorage.getItem('sias_surat_seeded')) {
+          onUpdate([]);
+        } else {
+          localStorage.setItem('sias_surat_seeded', 'true');
+          try {
+            const batch = writeBatch(db);
+            INITIAL_SURAT.forEach((s) => {
+              batch.set(doc(db, 'surat', s.id), s);
+            });
+            await batch.commit();
+          } catch (e) {
+            console.warn('Initial surat seed failed:', e);
+            onUpdate([]);
+          }
         }
       }
     },
@@ -230,22 +242,10 @@ export function subscribeTransaksi(onUpdate: (transaksi: TransaksiKeuangan[]) =>
   const colRef = collection(db, 'transaksi');
   return onSnapshot(
     colRef,
-    async (snapshot) => {
-      if (!snapshot.empty) {
-        const list: TransaksiKeuangan[] = [];
-        snapshot.forEach((d) => list.push(d.data() as TransaksiKeuangan));
-        onUpdate(list);
-      } else {
-        try {
-          const batch = writeBatch(db);
-          INITIAL_TRANSAKSI.forEach((t) => {
-            batch.set(doc(db, 'transaksi', t.id), t);
-          });
-          await batch.commit();
-        } catch (e) {
-          console.warn('Initial transaksi seed failed:', e);
-        }
-      }
+    (snapshot) => {
+      const list: TransaksiKeuangan[] = [];
+      snapshot.forEach((d) => list.push(d.data() as TransaksiKeuangan));
+      onUpdate(list);
     },
     (error) => {
       handleFirestoreError(error, OperationType.GET, 'transaksi');
@@ -263,14 +263,20 @@ export function subscribeAgenda(onUpdate: (agenda: AgendaSekolah[]) => void): ()
         snapshot.forEach((d) => list.push(d.data() as AgendaSekolah));
         onUpdate(list);
       } else {
-        try {
-          const batch = writeBatch(db);
-          INITIAL_AGENDA.forEach((a) => {
-            batch.set(doc(db, 'agenda', a.id), a);
-          });
-          await batch.commit();
-        } catch (e) {
-          console.warn('Initial agenda seed failed:', e);
+        if (localStorage.getItem('sias_agenda_seeded')) {
+          onUpdate([]);
+        } else {
+          localStorage.setItem('sias_agenda_seeded', 'true');
+          try {
+            const batch = writeBatch(db);
+            INITIAL_AGENDA.forEach((a) => {
+              batch.set(doc(db, 'agenda', a.id), a);
+            });
+            await batch.commit();
+          } catch (e) {
+            console.warn('Initial agenda seed failed:', e);
+            onUpdate([]);
+          }
         }
       }
     },
@@ -440,6 +446,28 @@ export async function batchImportTransaksiCloud(imported: TransaksiKeuangan[]): 
     }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, 'transaksi');
+  }
+}
+
+export async function clearAllTransaksiCloud(): Promise<void> {
+  try {
+    const existing = await getDocs(collection(db, 'transaksi'));
+    const batch = writeBatch(db);
+    existing.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, 'transaksi');
+  }
+}
+
+export async function purgeMockTransaksiCloud(): Promise<void> {
+  try {
+    const dummyIds = ['tr-01', 'tr-02', 'tr-03', 'tr-04', 'tr-05'];
+    const batch = writeBatch(db);
+    dummyIds.forEach((id) => batch.delete(doc(db, 'transaksi', id)));
+    await batch.commit();
+  } catch (e) {
+    console.warn('Purge mock transaksi failed:', e);
   }
 }
 

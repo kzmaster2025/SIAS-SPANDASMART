@@ -656,63 +656,7 @@ export const INITIAL_SURAT: SuratResmi[] = [
   }
 ];
 
-export const INITIAL_TRANSAKSI: TransaksiKeuangan[] = [
-  {
-    id: 'tr-01',
-    kodeTransaksi: 'TRX-BOS-26-001',
-    tanggal: '2026-10-02',
-    kategori: 'BOS Reguler',
-    jenis: 'Pemasukan',
-    uraian: 'Penerimaan Dana BOS Reguler Tahap II Tahun 2026 dari Kemenkeu RI',
-    jumlah: 320500000,
-    buktiRef: 'SP2D-BOS-2026-08912',
-    penanggungJawab: 'Bendahara BOS / Kepala Sekolah'
-  },
-  {
-    id: 'tr-02',
-    kodeTransaksi: 'TRX-BOS-26-002',
-    tanggal: '2026-10-05',
-    kategori: 'BOS Reguler',
-    jenis: 'Pengeluaran',
-    uraian: 'Pembelian Buku Teks Utama Kurikulum Merdeka Terbitan Kemendikbudristek',
-    jumlah: 48600000,
-    buktiRef: 'KWT-PT-GRAMEDIA-1002',
-    penanggungJawab: 'Pengelola Perpustakaan'
-  },
-  {
-    id: 'tr-03',
-    kodeTransaksi: 'TRX-BOS-26-003',
-    tanggal: '2026-10-08',
-    kategori: 'BOS Reguler',
-    jenis: 'Pengeluaran',
-    uraian: 'Pemeliharaan Jaringan Internet Fiber Optic 200 Mbps & Server Lab Komputer',
-    jumlah: 4500000,
-    buktiRef: 'INV-TELKOM-KOTA-SKBM-10',
-    penanggungJawab: 'Kaur Sarpras / Wildan Ramdani'
-  },
-  {
-    id: 'tr-04',
-    kodeTransaksi: 'TRX-KMT-26-001',
-    tanggal: '2026-10-12',
-    kategori: 'Komite Sekolah',
-    jenis: 'Pemasukan',
-    uraian: 'Penerimaan Sumbangan Sukarela Orang Tua untuk Pembangunan Kanopi Lapangan Upacara',
-    jumlah: 35000000,
-    buktiRef: 'KWT-KOMITE-OKT-01',
-    penanggungJawab: 'Ketua Komite Sekolah'
-  },
-  {
-    id: 'tr-05',
-    kodeTransaksi: 'TRX-BOS-26-004',
-    tanggal: '2026-10-20',
-    kategori: 'Kegiatan Siswa',
-    jenis: 'Pengeluaran',
-    uraian: 'Dukungan Akomodasi & Pendaftaran Kontingen Lomba FLS2N & O2SN Kota Sukabumi',
-    jumlah: 12400000,
-    buktiRef: 'BKK-KESISWAAN-041',
-    penanggungJawab: 'Wakasek Kesiswaan'
-  }
-];
+export const INITIAL_TRANSAKSI: TransaksiKeuangan[] = [];
 
 export const INITIAL_AGENDA: AgendaSekolah[] = [
   {
