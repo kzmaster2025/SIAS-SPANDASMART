@@ -12,12 +12,23 @@ import {
   Receipt,
   Printer,
   Lock,
-  Eye
+  Eye,
+  Edit2,
+  Trash2,
+  Upload,
+  FileText,
+  Download,
+  AlertCircle,
+  UploadCloud,
+  Paperclip
 } from 'lucide-react';
 
 interface AdministrasiKeuanganProps {
   transaksiList: TransaksiKeuangan[];
   onAddTransaksi: (trx: TransaksiKeuangan) => void;
+  onUpdateTransaksi?: (trx: TransaksiKeuangan) => void;
+  onDeleteTransaksi?: (id: string) => void;
+  onBatchImportTransaksi?: (imported: TransaksiKeuangan[]) => void;
   isAdmin?: boolean;
   onOpenAdminLogin?: () => void;
 }
@@ -25,13 +36,24 @@ interface AdministrasiKeuanganProps {
 export const AdministrasiKeuangan: React.FC<AdministrasiKeuanganProps> = ({
   transaksiList,
   onAddTransaksi,
+  onUpdateTransaksi,
+  onDeleteTransaksi,
+  onBatchImportTransaksi,
   isAdmin = false,
   onOpenAdminLogin
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKategori, setFilterKategori] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTrx, setEditingTrx] = useState<TransaksiKeuangan | null>(null);
+  const [trxToDelete, setTrxToDelete] = useState<TransaksiKeuangan | null>(null);
   const [selectedReceipt, setSelectedReceipt] = useState<TransaksiKeuangan | null>(null);
+
+  // Import State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importedPreview, setImportedPreview] = useState<TransaksiKeuangan[]>([]);
+  const [importFileName, setImportFileName] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<TransaksiKeuangan>>({
     kodeTransaksi: `TRX-BOS-26-00${transaksiList.length + 1}`,
@@ -41,8 +63,17 @@ export const AdministrasiKeuangan: React.FC<AdministrasiKeuanganProps> = ({
     uraian: '',
     jumlah: 0,
     buktiRef: `BKK-${Math.floor(100 + Math.random() * 900)}`,
-    penanggungJawab: 'Bendahara BOS'
+    penanggungJawab: 'Bendahara BOS',
+    fileBuktiNama: '',
+    fileBuktiUrl: '',
+    fileBuktiUkuran: ''
   });
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
 
   const totalPemasukan = transaksiList
     .filter(t => t.jenis === 'Pemasukan')
@@ -71,18 +102,140 @@ export const AdministrasiKeuangan: React.FC<AdministrasiKeuanganProps> = ({
     }).format(val);
   };
 
+  const handleOpenAdd = () => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
+    setEditingTrx(null);
+    setFormData({
+      kodeTransaksi: `TRX-BOS-26-0${transaksiList.length + 10}`,
+      tanggal: new Date().toISOString().slice(0, 10),
+      kategori: 'BOS Reguler',
+      jenis: 'Pengeluaran',
+      uraian: '',
+      jumlah: 0,
+      buktiRef: `BKK-${Math.floor(100 + Math.random() * 900)}`,
+      penanggungJawab: 'Bendahara BOS',
+      fileBuktiNama: '',
+      fileBuktiUrl: '',
+      fileBuktiUkuran: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (trx: TransaksiKeuangan) => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
+    setEditingTrx(trx);
+    setFormData({ ...trx });
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) return;
     if (!formData.uraian || !formData.jumlah) return;
 
-    const newTrx: TransaksiKeuangan = {
-      ...(formData as TransaksiKeuangan),
-      id: `tr-${Date.now()}`,
-      jumlah: Number(formData.jumlah)
-    };
-    onAddTransaksi(newTrx);
+    if (editingTrx) {
+      const updated: TransaksiKeuangan = {
+        ...editingTrx,
+        ...(formData as TransaksiKeuangan),
+        jumlah: Number(formData.jumlah)
+      };
+      onUpdateTransaksi?.(updated);
+    } else {
+      const newTrx: TransaksiKeuangan = {
+        ...(formData as TransaksiKeuangan),
+        id: `tr-${Date.now()}`,
+        jumlah: Number(formData.jumlah)
+      };
+      onAddTransaksi(newTrx);
+    }
     setIsModalOpen(false);
+  };
+
+  // Handle parsing CSV/Excel text file
+  const handleFileUploadImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFileName(file.name);
+    setImportError(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+        if (lines.length <= 1) {
+          setImportError('File kosong atau hanya berisi header tabel.');
+          return;
+        }
+
+        const parsed: TransaksiKeuangan[] = [];
+        // skip header (index 0)
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          // Support semicolon, comma, or tab delimiter
+          let parts = line.split(';');
+          if (parts.length < 4) parts = line.split(',');
+          if (parts.length < 4) parts = line.split('\t');
+
+          if (parts.length >= 4) {
+            const rawKode = parts[0]?.trim() || `TRX-BOS-26-${Date.now().toString().slice(-4)}${i}`;
+            const rawTgl = parts[1]?.trim() || new Date().toISOString().slice(0, 10);
+            const rawKat = (parts[2]?.trim() || 'BOS Reguler') as any;
+            const rawJenis = parts[3]?.trim().toLowerCase().includes('masuk') ? 'Pemasukan' : 'Pengeluaran';
+            const rawUraian = parts[4]?.trim() || 'Transaksi impor BKU';
+            const rawJumlah = Number((parts[5]?.replace(/[^0-9]/g, '')) || 0);
+            const rawBukti = parts[6]?.trim() || `BKK-${Math.floor(100 + Math.random() * 900)}`;
+            const rawPJ = parts[7]?.trim() || 'Bendahara Sekolah';
+
+            parsed.push({
+              id: `tr-imp-${Date.now()}-${i}`,
+              kodeTransaksi: rawKode,
+              tanggal: rawTgl,
+              kategori: ['BOS Reguler', 'BOS Kinerja', 'Komite Sekolah', 'Kegiatan Siswa'].includes(rawKat) ? rawKat : 'BOS Reguler',
+              jenis: rawJenis,
+              uraian: rawUraian,
+              jumlah: rawJumlah > 0 ? rawJumlah : 500000,
+              buktiRef: rawBukti,
+              penanggungJawab: rawPJ
+            });
+          }
+        }
+
+        if (parsed.length === 0) {
+          setImportError('Gagal membaca format baris transaksi. Pastikan kolom sesuai petunjuk.');
+        } else {
+          setImportedPreview(parsed);
+        }
+      } catch (err: any) {
+        setImportError(`Gagal membaca file: ${err.message || 'Format tidak valid'}`);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleApplyImport = () => {
+    if (importedPreview.length === 0) return;
+    onBatchImportTransaksi?.(importedPreview);
+    setIsImportModalOpen(false);
+    setImportedPreview([]);
+    setImportFileName('');
+  };
+
+  const downloadCsvTemplate = () => {
+    const csvContent = `Kode BKU;Tanggal;Sumber Anggaran;Jenis;Uraian Penggunaan;Jumlah;No Bukti;Penanggung Jawab\nTRX-BOS-26-021;2026-10-15;BOS Reguler;Pengeluaran;Pengadaan kertas HVS & tinta toner cetak ujian;1850000;KWT-ATK-2026;Kaur Sarpras\nTRX-BOS-26-022;2026-10-18;Komite Sekolah;Pemasukan;Sumbangan sukarela orang tua siswa perbaikan kanopi;4500000;KMT-MASUK-09;Ketua Komite\nTRX-BOS-26-023;2026-10-20;BOS Reguler;Pengeluaran;Langganan internet dedicated 200 Mbps bulan Oktober;3200000;INV-TELKOM-10;PJ Lab Komputer`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Format_Import_Transaksi_BKU_SMPN2.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -106,13 +259,28 @@ export const AdministrasiKeuangan: React.FC<AdministrasiKeuanganProps> = ({
         </div>
 
         {isAdmin ? (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Catat Transaksi BKU</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                setImportedPreview([]);
+                setImportFileName('');
+                setImportError(null);
+                setIsImportModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+              title="Import transaksi dari file Excel / CSV"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Import File Transaksi</span>
+            </button>
+            <button
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Catat Transaksi BKU</span>
+            </button>
+          </div>
         ) : (
           <button
             onClick={onOpenAdminLogin}
@@ -300,13 +468,47 @@ export const AdministrasiKeuangan: React.FC<AdministrasiKeuanganProps> = ({
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => setSelectedReceipt(trx)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded transition-colors cursor-pointer"
-                    >
-                      <Receipt className="w-3 h-3" />
-                      <span>Kuitansi</span>
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => setSelectedReceipt(trx)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded transition-colors cursor-pointer"
+                        title="Lihat & Cetak Kuitansi Resmi"
+                      >
+                        <Receipt className="w-3 h-3" />
+                        <span>Kuitansi</span>
+                      </button>
+
+                      {trx.fileBuktiUrl && (
+                        <a
+                          href={trx.fileBuktiUrl}
+                          download={trx.fileBuktiNama || `Bukti_${trx.kodeTransaksi}`}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded transition-colors cursor-pointer"
+                          title={`Unduh Dokumen Bukti: ${trx.fileBuktiNama || 'Berkas Lampiran'}`}
+                        >
+                          <Paperclip className="w-3 h-3" />
+                          <span>Bukti</span>
+                        </a>
+                      )}
+
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => handleOpenEdit(trx)}
+                            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-blue-700 transition-colors cursor-pointer"
+                            title="Edit Data Transaksi"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setTrxToDelete(trx)}
+                            className="p-1.5 rounded-md hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                            title="Hapus Transaksi BKU"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -315,13 +517,15 @@ export const AdministrasiKeuangan: React.FC<AdministrasiKeuanganProps> = ({
         </div>
       </div>
 
-      {/* Modal Tambah Transaksi */}
+      {/* Modal Tambah & Edit Transaksi */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-lg w-full p-6">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-lg w-full p-6 my-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <h2 className="text-base font-bold text-slate-900">Catat Transaksi BKU Baru</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-base font-bold text-slate-900">
+                {editingTrx ? 'Edit Data Transaksi BKU' : 'Catat Transaksi BKU Baru'}
+              </h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -420,6 +624,48 @@ export const AdministrasiKeuangan: React.FC<AdministrasiKeuanganProps> = ({
                 />
               </div>
 
+              {/* Upload Berkas Bukti / Kuitansi */}
+              <div className="p-3 bg-blue-50/50 border border-blue-200/80 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-800 font-bold text-xs flex items-center gap-1.5">
+                    <UploadCloud className="w-4 h-4 text-blue-700" />
+                    <span>Upload Bukti Transaksi / Faktur / Nota (PDF, Excel, Foto)</span>
+                  </label>
+                  <span className="text-[10px] text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded font-medium">Opsional</span>
+                </div>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setFormData(prev => ({
+                        ...prev,
+                        fileBuktiUrl: reader.result as string,
+                        fileBuktiNama: file.name,
+                        fileBuktiUkuran: formatFileSize(file.size)
+                      }));
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-700 file:text-white hover:file:bg-blue-800 cursor-pointer"
+                />
+                {formData.fileBuktiNama && (
+                  <div className="flex items-center justify-between text-[11px] p-2 bg-white rounded border border-slate-200">
+                    <span className="truncate font-mono font-medium text-slate-700">{formData.fileBuktiNama} ({formData.fileBuktiUkuran})</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, fileBuktiNama: '', fileBuktiUrl: '', fileBuktiUkuran: '' }))}
+                      className="text-rose-600 hover:text-rose-800 font-bold cursor-pointer"
+                    >
+                      Hapus Lampiran
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
@@ -432,10 +678,168 @@ export const AdministrasiKeuangan: React.FC<AdministrasiKeuanganProps> = ({
                   type="submit"
                   className="px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
                 >
-                  Simpan Transaksi
+                  {editingTrx ? 'Simpan Perubahan Transaksi' : 'Simpan Transaksi'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Transaksi */}
+      {trxToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xl max-w-md w-full p-6 text-slate-900">
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 mb-2">Hapus Transaksi BKU?</h3>
+            <p className="text-xs text-slate-600 leading-relaxed mb-4">
+              Apakah Anda yakin ingin menghapus catatan transaksi <strong className="text-slate-900">{trxToDelete.kodeTransaksi}</strong> ({trxToDelete.uraian} - {formatRupiah(trxToDelete.jumlah)})? Data saldo kas akan diperbarui secara otomatis.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setTrxToDelete(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteTransaksi?.(trxToDelete.id);
+                  setTrxToDelete(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Ya, Hapus Transaksi</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Import Transaksi (Excel / CSV) */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-2xl w-full p-6 my-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Import File Transaksi BKU (Excel / CSV)</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Unggah berkas rekap kas dalam format CSV atau Excel spreadsheet.</p>
+              </div>
+              <button onClick={() => setIsImportModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-slate-800">Contoh Format Kolom Excel/CSV:</p>
+                  <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+                    Kode BKU ; Tanggal ; Sumber Anggaran ; Jenis ; Uraian ; Jumlah ; No Bukti ; Penanggung Jawab
+                  </p>
+                </div>
+                <button
+                  onClick={downloadCsvTemplate}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg text-slate-700 font-semibold text-[11px] shrink-0 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Unduh Contoh</span>
+                </button>
+              </div>
+
+              <div className="relative border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-lg p-6 text-center bg-white transition-colors">
+                <input
+                  type="file"
+                  accept=".csv,.txt,.xlsx,.xls"
+                  onChange={handleFileUploadImport}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="flex flex-col items-center pointer-events-none">
+                  <FileSpreadsheet className="w-9 h-9 text-blue-600 mb-1" />
+                  <p className="text-xs font-semibold text-slate-800">
+                    Klik atau tarik file CSV / Excel ke sini untuk diunggah
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {importFileName ? `File terpilih: ${importFileName}` : 'Format yang didukung: .csv, .txt, .xlsx, .xls'}
+                  </p>
+                </div>
+              </div>
+
+              {importError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{importError}</span>
+                </div>
+              )}
+
+              {importedPreview.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800">
+                      Pratinjau Hasil Pembacaan ({importedPreview.length} Transaksi)
+                    </span>
+                    <span className="text-[11px] text-emerald-700 font-semibold">Format Terverifikasi</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-left text-[11px]">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold sticky top-0">
+                        <tr>
+                          <th className="p-2">Kode BKU</th>
+                          <th className="p-2">Tanggal</th>
+                          <th className="p-2">Jenis</th>
+                          <th className="p-2">Uraian</th>
+                          <th className="p-2 text-right">Jumlah (Rp)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-mono">
+                        {importedPreview.slice(0, 10).map((t, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="p-2 font-semibold text-slate-800">{t.kodeTransaksi}</td>
+                            <td className="p-2">{t.tanggal}</td>
+                            <td className="p-2">
+                              <span className={t.jenis === 'Pemasukan' ? 'text-emerald-700 font-semibold' : 'text-rose-700 font-semibold'}>
+                                {t.jenis}
+                              </span>
+                            </td>
+                            <td className="p-2 truncate max-w-[180px] font-sans">{t.uraian}</td>
+                            <td className="p-2 text-right font-bold">{formatRupiah(t.jumlah)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {importedPreview.length > 10 && (
+                    <p className="text-[11px] text-slate-400 text-right italic">
+                      + {importedPreview.length - 10} transaksi lainnya siap diimpor.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsImportModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={importedPreview.length === 0}
+                  onClick={handleApplyImport}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Impor {importedPreview.length} Transaksi ke Sistem</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

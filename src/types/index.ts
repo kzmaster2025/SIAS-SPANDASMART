@@ -62,8 +62,9 @@ export interface DokumenSekolah {
   akses: 'Publik Sekolah' | 'Internal GTK' | 'Terbatas Pimpinan & TU';
   deskripsi: string;
   fileNama: string;
-  fileTipe: 'PDF' | 'DOCX' | 'XLSX';
+  fileTipe: 'PDF' | 'DOCX' | 'XLSX' | 'PPTX' | 'Gambar' | string;
   fileUkuran: string;
+  fileUrl?: string;
   isiRingkasan: string;
 }
 
@@ -184,6 +185,9 @@ export interface TransaksiKeuangan {
   jumlah: number;
   buktiRef: string;
   penanggungJawab: string;
+  fileBuktiNama?: string;
+  fileBuktiUrl?: string;
+  fileBuktiUkuran?: string;
 }
 
 export interface AgendaSekolah {
@@ -195,6 +199,10 @@ export interface AgendaSekolah {
   deskripsi: string;
   penanggungJawab: string;
   status: 'Akan Datang' | 'Sedang Berjalan' | 'Selesai';
+  fileLampiranNama?: string;
+  fileLampiranUrl?: string;
+  fileLampiranTipe?: string;
+  fileLampiranUkuran?: string;
 }
 
 export interface ProfilSekolahData {

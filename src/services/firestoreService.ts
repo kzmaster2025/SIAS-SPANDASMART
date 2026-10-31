@@ -418,12 +418,46 @@ export async function saveTransaksiCloud(trx: TransaksiKeuangan): Promise<void> 
   }
 }
 
+export async function deleteTransaksiCloud(id: string): Promise<void> {
+  const path = `transaksi/${id}`;
+  try {
+    await deleteDoc(doc(db, 'transaksi', id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function batchImportTransaksiCloud(imported: TransaksiKeuangan[]): Promise<void> {
+  try {
+    const chunkSize = 400;
+    for (let i = 0; i < imported.length; i += chunkSize) {
+      const chunk = imported.slice(i, i + chunkSize);
+      const batch = writeBatch(db);
+      chunk.forEach((t) => {
+        batch.set(doc(db, 'transaksi', t.id), t);
+      });
+      await batch.commit();
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'transaksi');
+  }
+}
+
 export async function saveAgendaCloud(agenda: AgendaSekolah): Promise<void> {
   const path = `agenda/${agenda.id}`;
   try {
     await setDoc(doc(db, 'agenda', agenda.id), agenda);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteAgendaCloud(id: string): Promise<void> {
+  const path = `agenda/${id}`;
+  try {
+    await deleteDoc(doc(db, 'agenda', id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
   }
 }
 

@@ -54,7 +54,10 @@ import {
   saveSuratCloud,
   deleteSuratCloud,
   saveTransaksiCloud,
+  deleteTransaksiCloud,
+  batchImportTransaksiCloud,
   saveAgendaCloud,
+  deleteAgendaCloud,
   saveCustomMenuCloud,
   deleteCustomMenuCloud,
   saveCustomMenuItemCloud,
@@ -660,8 +663,70 @@ export default function App() {
       setIsLoginModalOpen(true);
       return;
     }
-    setTransaksiList(prev => [trx, ...prev]);
+    setTransaksiList(prev => {
+      const updated = [trx, ...prev];
+      try {
+        localStorage.setItem('sias_transaksi_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
     await saveTransaksiCloud(trx);
+  };
+
+  const handleUpdateTransaksi = async (trx: TransaksiKeuangan) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setTransaksiList(prev => {
+      const updated = prev.map(t => t.id === trx.id ? trx : t);
+      try {
+        localStorage.setItem('sias_transaksi_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    await saveTransaksiCloud(trx);
+  };
+
+  const handleDeleteTransaksi = async (id: string) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setTransaksiList(prev => {
+      const updated = prev.filter(t => t.id !== id);
+      try {
+        localStorage.setItem('sias_transaksi_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    await deleteTransaksiCloud(id);
+  };
+
+  const handleBatchImportTransaksi = async (imported: TransaksiKeuangan[]) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setTransaksiList(prev => {
+      const updated = [...imported, ...prev];
+      try {
+        localStorage.setItem('sias_transaksi_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    await batchImportTransaksiCloud(imported);
   };
 
   // Agenda Handlers
@@ -671,8 +736,52 @@ export default function App() {
       setIsLoginModalOpen(true);
       return;
     }
-    setAgendaList(prev => [ag, ...prev]);
+    setAgendaList(prev => {
+      const updated = [ag, ...prev];
+      try {
+        localStorage.setItem('sias_agenda_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
     await saveAgendaCloud(ag);
+  };
+
+  const handleUpdateAgenda = async (ag: AgendaSekolah) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setAgendaList(prev => {
+      const updated = prev.map(a => a.id === ag.id ? ag : a);
+      try {
+        localStorage.setItem('sias_agenda_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    await saveAgendaCloud(ag);
+  };
+
+  const handleDeleteAgenda = async (id: string) => {
+    if (!isAdmin) {
+      setLoginModalMode('login');
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setAgendaList(prev => {
+      const updated = prev.filter(a => a.id !== id);
+      try {
+        localStorage.setItem('sias_agenda_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+    await deleteAgendaCloud(id);
   };
 
   // Custom Menu Handlers
@@ -988,6 +1097,9 @@ export default function App() {
             <AdministrasiKeuangan
               transaksiList={transaksiList}
               onAddTransaksi={handleAddTransaksi}
+              onUpdateTransaksi={handleUpdateTransaksi}
+              onDeleteTransaksi={handleDeleteTransaksi}
+              onBatchImportTransaksi={handleBatchImportTransaksi}
               isAdmin={isAdmin}
               onOpenAdminLogin={() => {
                 setLoginModalMode('login');
@@ -1000,6 +1112,8 @@ export default function App() {
             <AgendaPengumuman
               agendaList={agendaList}
               onAddAgenda={handleAddAgenda}
+              onUpdateAgenda={handleUpdateAgenda}
+              onDeleteAgenda={handleDeleteAgenda}
               isAdmin={isAdmin}
               onOpenAdminLogin={() => {
                 setLoginModalMode('login');

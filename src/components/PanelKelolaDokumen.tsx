@@ -53,6 +53,23 @@ export const PanelKelolaDokumen: React.FC<PanelKelolaDokumenProps> = ({
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDokumen, setEditingDokumen] = useState<DokumenSekolah | null>(null);
+  const [docToDelete, setDocToDelete] = useState<DokumenSekolah | null>(null);
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const detectFileType = (fileName: string): string => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return 'PDF';
+    if (['doc', 'docx'].includes(ext || '')) return 'DOCX';
+    if (['xls', 'xlsx', 'csv'].includes(ext || '')) return 'XLSX';
+    if (['ppt', 'pptx'].includes(ext || '')) return 'PPTX';
+    if (['jpg', 'jpeg', 'png', 'webp'].includes(ext || '')) return 'Gambar';
+    return (ext || 'PDF').toUpperCase();
+  };
 
   // Form State
   const [formData, setFormData] = useState<Partial<DokumenSekolah>>({
@@ -159,6 +176,16 @@ export const PanelKelolaDokumen: React.FC<PanelKelolaDokumenProps> = ({
   };
 
   const handleDownload = (doc: DokumenSekolah) => {
+    if (doc.fileUrl) {
+      const element = document.createElement('a');
+      element.href = doc.fileUrl;
+      element.download = doc.fileNama || `${doc.judul.replace(/\s+/g, '_')}`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      return;
+    }
+
     const element = document.createElement('a');
     const content = `=====================================================
 SMP NEGERI 2 KOTA SUKABUMI - DOKUMEN RESMI TATA USAHA
@@ -531,7 +558,7 @@ ${doc.isiRingkasan}
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => onDeleteDokumen(doc.id)}
+                              onClick={() => setDocToDelete(doc)}
                               title="Hapus Dokumen"
                               className="p-1.5 rounded-md hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
                             >
@@ -685,11 +712,74 @@ ${doc.isiRingkasan}
                 </div>
               </div>
 
-              {/* Lampiran File */}
+              {/* Upload Berkas / Dokumen Asli */}
+              <div className="p-3.5 bg-blue-50/50 border border-blue-200/80 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-800 font-bold text-xs flex items-center gap-1.5">
+                    <UploadCloud className="w-4 h-4 text-blue-700" />
+                    <span>Upload Berkas Dokumen (PDF, Word, Excel, PPT, Gambar)</span>
+                  </label>
+                  <span className="text-[10px] text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded font-medium">
+                    Mendukung Semua Format Dokumen
+                  </span>
+                </div>
+
+                <div className="relative border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-lg p-4 text-center bg-white transition-colors">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.webp,.txt"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setFormData(prev => ({
+                          ...prev,
+                          fileUrl: reader.result as string,
+                          fileNama: file.name,
+                          fileUkuran: formatFileSize(file.size),
+                          fileTipe: detectFileType(file.name)
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex flex-col items-center pointer-events-none">
+                    <FolderOpen className="w-8 h-8 text-blue-600 mb-1" />
+                    <p className="text-xs font-semibold text-slate-800">
+                      Klik atau seret file dokumen ke sini untuk mengunggah
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      PDF, DOCX, XLSX, PPTX, JPG, PNG (Maksimal 15 MB)
+                    </p>
+                  </div>
+                </div>
+
+                {formData.fileNama && (
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg text-xs">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 font-bold font-mono rounded text-[11px] shrink-0">
+                        {formData.fileTipe || 'FILE'}
+                      </span>
+                      <span className="truncate font-medium text-slate-800">{formData.fileNama}</span>
+                      <span className="text-[11px] text-slate-400 font-mono shrink-0">({formData.fileUkuran || '1.2 MB'})</span>
+                    </div>
+                    {formData.fileUrl && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 shrink-0">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Siap Disimpan</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Rincian Tambahan File */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-700 font-semibold mb-1">
-                    Format File
+                    Label Format File
                   </label>
                   <select
                     value={formData.fileTipe}
@@ -697,13 +787,15 @@ ${doc.isiRingkasan}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-semibold"
                   >
                     <option value="PDF">PDF (.pdf)</option>
-                    <option value="DOCX">DOCX (.docx)</option>
-                    <option value="XLSX">XLSX (.xlsx)</option>
+                    <option value="DOCX">DOCX (.docx / .doc)</option>
+                    <option value="XLSX">XLSX (.xlsx / .xls)</option>
+                    <option value="PPTX">PPTX (.pptx / .ppt)</option>
+                    <option value="Gambar">Gambar (.jpg / .png)</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-slate-700 font-semibold mb-1">
-                    Nama File Berkas Lampiran
+                    Nama File Tampilan
                   </label>
                   <input
                     type="text"
@@ -715,7 +807,7 @@ ${doc.isiRingkasan}
                 </div>
                 <div>
                   <label className="block text-slate-700 font-semibold mb-1">
-                    Estimasi Ukuran File
+                    Ukuran File
                   </label>
                   <input
                     type="text"
@@ -745,7 +837,7 @@ ${doc.isiRingkasan}
                   Isi Ringkasan / Ketentuan Regulasi Pokok
                 </label>
                 <textarea
-                  rows={5}
+                  rows={4}
                   value={formData.isiRingkasan || ''}
                   onChange={(e) => setFormData({ ...formData, isiRingkasan: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-mono text-[11px]"
@@ -769,6 +861,41 @@ ${doc.isiRingkasan}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Dokumen */}
+      {docToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xl max-w-md w-full p-6 text-slate-900">
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 mb-2">Hapus Dokumen / SK Sekolah?</h3>
+            <p className="text-xs text-slate-600 leading-relaxed mb-4">
+              Apakah Anda yakin ingin menghapus dokumen <strong className="text-slate-900">{docToDelete.judul}</strong> ({docToDelete.nomorDokumen})? Berkas arsip ini akan dihapus secara permanen.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDocToDelete(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteDokumen(docToDelete.id);
+                  setDocToDelete(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Ya, Hapus Dokumen</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

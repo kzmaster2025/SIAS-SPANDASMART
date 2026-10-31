@@ -10,12 +10,21 @@ import {
   CheckCircle2,
   X,
   Lock,
-  Eye
+  Eye,
+  Edit2,
+  Trash2,
+  UploadCloud,
+  Paperclip,
+  Download,
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 
 interface AgendaPengumumanProps {
   agendaList: AgendaSekolah[];
   onAddAgenda: (agenda: AgendaSekolah) => void;
+  onUpdateAgenda?: (agenda: AgendaSekolah) => void;
+  onDeleteAgenda?: (id: string) => void;
   isAdmin?: boolean;
   onOpenAdminLogin?: () => void;
 }
@@ -23,11 +32,15 @@ interface AgendaPengumumanProps {
 export const AgendaPengumuman: React.FC<AgendaPengumumanProps> = ({
   agendaList,
   onAddAgenda,
+  onUpdateAgenda,
+  onDeleteAgenda,
   isAdmin = false,
   onOpenAdminLogin
 }) => {
   const [filterKategori, setFilterKategori] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAgenda, setEditingAgenda] = useState<AgendaSekolah | null>(null);
+  const [agendaToDelete, setAgendaToDelete] = useState<AgendaSekolah | null>(null);
 
   const [formData, setFormData] = useState<Partial<AgendaSekolah>>({
     judul: '',
@@ -36,8 +49,60 @@ export const AgendaPengumuman: React.FC<AgendaPengumumanProps> = ({
     lokasi: 'SMP Negeri 2 Kota Sukabumi',
     deskripsi: '',
     penanggungJawab: 'Wakasek',
-    status: 'Akan Datang'
+    status: 'Akan Datang',
+    fileLampiranNama: '',
+    fileLampiranUrl: '',
+    fileLampiranTipe: '',
+    fileLampiranUkuran: ''
   });
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const detectFileType = (fileName: string): string => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return 'PDF';
+    if (['doc', 'docx'].includes(ext || '')) return 'DOCX';
+    if (['xls', 'xlsx'].includes(ext || '')) return 'XLSX';
+    if (['ppt', 'pptx'].includes(ext || '')) return 'PPTX';
+    if (['jpg', 'jpeg', 'png'].includes(ext || '')) return 'Gambar';
+    return (ext || 'FILE').toUpperCase();
+  };
+
+  const handleOpenAdd = () => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
+    setEditingAgenda(null);
+    setFormData({
+      judul: '',
+      tanggal: new Date().toISOString().slice(0, 10),
+      kategori: 'Akademik',
+      lokasi: 'SMP Negeri 2 Kota Sukabumi',
+      deskripsi: '',
+      penanggungJawab: 'Wakasek Kesiswaan / Panitia',
+      status: 'Akan Datang',
+      fileLampiranNama: '',
+      fileLampiranUrl: '',
+      fileLampiranTipe: '',
+      fileLampiranUkuran: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (item: AgendaSekolah) => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
+    setEditingAgenda(item);
+    setFormData({ ...item });
+    setIsModalOpen(true);
+  };
 
   const filteredAgenda = agendaList.filter((a) => {
     return filterKategori === 'all' || a.kategori === filterKategori;
@@ -48,11 +113,19 @@ export const AgendaPengumuman: React.FC<AgendaPengumumanProps> = ({
     if (!isAdmin) return;
     if (!formData.judul || !formData.tanggal) return;
 
-    const newAgenda: AgendaSekolah = {
-      ...(formData as AgendaSekolah),
-      id: `ag-${Date.now()}`
-    };
-    onAddAgenda(newAgenda);
+    if (editingAgenda) {
+      const updated: AgendaSekolah = {
+        ...editingAgenda,
+        ...(formData as AgendaSekolah)
+      };
+      onUpdateAgenda?.(updated);
+    } else {
+      const newAgenda: AgendaSekolah = {
+        ...(formData as AgendaSekolah),
+        id: `ag-${Date.now()}`
+      };
+      onAddAgenda(newAgenda);
+    }
     setIsModalOpen(false);
   };
 
@@ -78,7 +151,7 @@ export const AgendaPengumuman: React.FC<AgendaPengumumanProps> = ({
 
         {isAdmin ? (
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleOpenAdd}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4" />
@@ -171,16 +244,53 @@ export const AgendaPengumuman: React.FC<AgendaPengumumanProps> = ({
                 <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-[11px]">
                   {item.kategori}
                 </span>
-                <span className="font-mono text-[11px] text-slate-500 font-medium">{item.status}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px] text-slate-500 font-medium">{item.status}</span>
+                  {isAdmin && (
+                    <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-blue-700 transition-colors cursor-pointer"
+                        title="Edit Agenda Kegiatan"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setAgendaToDelete(item)}
+                        className="p-1 rounded hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
+                        title="Hapus Agenda"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <h3 className="text-sm font-bold text-slate-900 mb-2 leading-snug">
                 {item.judul}
               </h3>
 
-              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+              <p className="text-xs text-slate-600 leading-relaxed mb-3">
                 {item.deskripsi}
               </p>
+
+              {/* Lampiran Dokumen jika ada */}
+              {item.fileLampiranUrl && (
+                <div className="mt-2 mb-3">
+                  <a
+                    href={item.fileLampiranUrl}
+                    download={item.fileLampiranNama || `Lampiran_${item.judul}`}
+                    className="inline-flex items-center gap-2 p-2 bg-blue-50/70 hover:bg-blue-100/80 border border-blue-200/80 rounded-lg text-xs font-semibold text-blue-800 transition-colors w-full cursor-pointer"
+                    title={`Unduh Berkas Lampiran: ${item.fileLampiranNama}`}
+                  >
+                    <Paperclip className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                    <span className="truncate flex-1 text-left">{item.fileLampiranNama || 'Dokumen / Juknis Lampiran'}</span>
+                    <span className="text-[10px] text-blue-600 font-mono shrink-0">({item.fileLampiranUkuran || item.fileLampiranTipe || 'Dokumen'})</span>
+                    <Download className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                  </a>
+                </div>
+              )}
             </div>
 
             <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-500">
@@ -201,13 +311,15 @@ export const AgendaPengumuman: React.FC<AgendaPengumumanProps> = ({
         ))}
       </div>
 
-      {/* Modal Tambah Agenda */}
+      {/* Modal Tambah & Edit Agenda */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-lg w-full p-6">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-lg w-full p-6 my-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <h2 className="text-base font-bold text-slate-900">Tambah Agenda Sekolah Baru</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-base font-bold text-slate-900">
+                {editingAgenda ? 'Edit Agenda & Pengumuman Sekolah' : 'Tambah Agenda Sekolah Baru'}
+              </h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -252,14 +364,28 @@ export const AgendaPengumuman: React.FC<AgendaPengumumanProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Lokasi Kegiatan</label>
-                <input
-                  type="text"
-                  value={formData.lokasi}
-                  onChange={(e) => setFormData({ ...formData, lokasi: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Lokasi Kegiatan</label>
+                  <input
+                    type="text"
+                    value={formData.lokasi}
+                    onChange={(e) => setFormData({ ...formData, lokasi: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Status Kegiatan</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                  >
+                    <option value="Akan Datang">Akan Datang</option>
+                    <option value="Sedang Berjalan">Sedang Berjalan</option>
+                    <option value="Selesai">Selesai</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -282,6 +408,51 @@ export const AgendaPengumuman: React.FC<AgendaPengumumanProps> = ({
                 />
               </div>
 
+              {/* Upload Berkas / Edaran / Juknis */}
+              <div className="p-3 bg-blue-50/50 border border-blue-200/80 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-800 font-bold text-xs flex items-center gap-1.5">
+                    <UploadCloud className="w-4 h-4 text-blue-700" />
+                    <span>Upload Berkas / Edaran / Juknis (PDF, Word, Excel, Foto)</span>
+                  </label>
+                  <span className="text-[10px] text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded font-medium">Opsional</span>
+                </div>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.txt"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setFormData(prev => ({
+                        ...prev,
+                        fileLampiranUrl: reader.result as string,
+                        fileLampiranNama: file.name,
+                        fileLampiranUkuran: formatFileSize(file.size),
+                        fileLampiranTipe: detectFileType(file.name)
+                      }));
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-700 file:text-white hover:file:bg-blue-800 cursor-pointer"
+                />
+                {formData.fileLampiranNama && (
+                  <div className="flex items-center justify-between text-[11px] p-2 bg-white rounded border border-slate-200">
+                    <span className="truncate font-mono font-medium text-slate-700">
+                      {formData.fileLampiranNama} ({formData.fileLampiranUkuran})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, fileLampiranNama: '', fileLampiranUrl: '', fileLampiranTipe: '', fileLampiranUkuran: '' }))}
+                      className="text-rose-600 hover:text-rose-800 font-bold cursor-pointer"
+                    >
+                      Hapus Lampiran
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
@@ -294,10 +465,45 @@ export const AgendaPengumuman: React.FC<AgendaPengumumanProps> = ({
                   type="submit"
                   className="px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg shadow-xs cursor-pointer"
                 >
-                  Publikasikan ke Mading
+                  {editingAgenda ? 'Simpan Perubahan Agenda' : 'Publikasikan ke Mading'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Agenda */}
+      {agendaToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xl max-w-md w-full p-6 text-slate-900">
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 mb-2">Hapus Agenda Sekolah?</h3>
+            <p className="text-xs text-slate-600 leading-relaxed mb-4">
+              Apakah Anda yakin ingin menghapus agenda <strong className="text-slate-900">{agendaToDelete.judul}</strong> ({agendaToDelete.tanggal})? Kegiatan ini akan dihapus dari papan pengumuman.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setAgendaToDelete(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteAgenda?.(agendaToDelete.id);
+                  setAgendaToDelete(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Ya, Hapus Agenda</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
