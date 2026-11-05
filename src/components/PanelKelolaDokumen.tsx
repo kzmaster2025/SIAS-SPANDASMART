@@ -67,7 +67,11 @@ export const PanelKelolaDokumen: React.FC<PanelKelolaDokumenProps> = ({
     if (['doc', 'docx'].includes(ext || '')) return 'DOCX';
     if (['xls', 'xlsx', 'csv'].includes(ext || '')) return 'XLSX';
     if (['ppt', 'pptx'].includes(ext || '')) return 'PPTX';
-    if (['jpg', 'jpeg', 'png', 'webp'].includes(ext || '')) return 'Gambar';
+    if (['jpg', 'jpeg', 'png', 'webp', 'svg'].includes(ext || '')) return 'Gambar';
+    if (ext === 'zip') return 'ZIP';
+    if (ext === 'rar') return 'RAR';
+    if (['7z', 'tar', 'gz'].includes(ext || '')) return 'ZIP';
+    if (fileName.toLowerCase().includes('folder')) return 'Folder';
     return (ext || 'PDF').toUpperCase();
   };
 
@@ -186,30 +190,19 @@ export const PanelKelolaDokumen: React.FC<PanelKelolaDokumenProps> = ({
       return;
     }
 
+    const ext = (doc.fileNama || '').split('.').pop()?.toLowerCase();
+    let mimeType = 'application/octet-stream';
+    if (doc.fileTipe === 'PDF' || ext === 'pdf') mimeType = 'application/pdf';
+    else if (doc.fileTipe === 'ZIP' || doc.fileTipe === 'Folder' || ext === 'zip') mimeType = 'application/zip';
+    else if (doc.fileTipe === 'RAR' || ext === 'rar') mimeType = 'application/x-rar-compressed';
+    else if (doc.fileTipe === 'DOCX') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    else if (doc.fileTipe === 'XLSX') mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
     const element = document.createElement('a');
-    const content = `=====================================================
-SMP NEGERI 2 KOTA SUKABUMI - DOKUMEN RESMI TATA USAHA
-Jl. Ir. H. Juanda No. 14 Cikole Kota Sukabumi
-=====================================================
-
-JUDUL: ${doc.judul}
-NOMOR: ${doc.nomorDokumen}
-KATEGORI: ${doc.kategori}
-TAHUN AJARAN: ${doc.tahunAjaran}
-TANGGAL: ${doc.tanggalTerbit}
-PENGESAH: ${doc.pengesah}
-STATUS: ${doc.status}
-HAK AKSES: ${doc.akses}
-
-DESKRIPSI DOKUMEN:
-${doc.deskripsi}
-
-ISI RINGKASAN & REGULASI:
-${doc.isiRingkasan}
-`;
-    const file = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const content = `Berkas: ${doc.fileNama}\nJudul: ${doc.judul}\nNomor Dokumen: ${doc.nomorDokumen}\nPengesah: ${doc.pengesah}\nTanggal: ${doc.tanggalTerbit}\nKategori: ${doc.kategori}\nDeskripsi:\n${doc.deskripsi}\n\nIsi Ringkasan:\n${doc.isiRingkasan}`;
+    const file = new Blob([content], { type: mimeType });
     element.href = URL.createObjectURL(file);
-    element.download = doc.fileNama || `${doc.judul.replace(/\s+/g, '_')}.txt`;
+    element.download = doc.fileNama || `${doc.judul.replace(/\s+/g, '_')}.${ext || 'txt'}`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -457,7 +450,16 @@ ${doc.isiRingkasan}
                         {doc.judul}
                       </div>
                       <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-mono mt-0.5">
-                        <span className="font-semibold text-blue-700">{doc.fileTipe}</span>
+                        <span className={`inline-flex items-center gap-1 font-semibold px-1.5 py-0.2 rounded text-[10px] ${
+                          ['ZIP', 'RAR', 'Folder', 'Arsip'].includes(doc.fileTipe)
+                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                            : doc.fileTipe === 'PDF'
+                            ? 'bg-rose-50 text-rose-700'
+                            : 'bg-blue-50 text-blue-700'
+                        }`}>
+                          {['ZIP', 'RAR', 'Folder', 'Arsip'].includes(doc.fileTipe) && <Archive className="w-3 h-3" />}
+                          <span>{doc.fileTipe}</span>
+                        </span>
                         <span aria-hidden="true">·</span>
                         <span className="truncate max-w-[200px]">{doc.fileNama}</span>
                         <span aria-hidden="true">·</span>
@@ -712,54 +714,109 @@ ${doc.isiRingkasan}
                 </div>
               </div>
 
-              {/* Upload Berkas / Dokumen Asli */}
+              {/* Upload Berkas / Dokumen Asli & Arsip Folder/RAR/ZIP */}
               <div className="p-3.5 bg-blue-50/50 border border-blue-200/80 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="block text-slate-800 font-bold text-xs flex items-center gap-1.5">
                     <UploadCloud className="w-4 h-4 text-blue-700" />
-                    <span>Upload Berkas Dokumen (PDF, Word, Excel, PPT, Gambar)</span>
+                    <span>Upload Berkas Dokumen & Arsip (ZIP, RAR, Folder, PDF, Word, Excel, Gambar)</span>
                   </label>
                   <span className="text-[10px] text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded font-medium">
-                    Mendukung Semua Format Dokumen
+                    Mendukung ZIP, RAR, Folder & Semua Format
                   </span>
                 </div>
 
-                <div className="relative border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-lg p-4 text-center bg-white transition-colors">
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.webp,.txt"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        setFormData(prev => ({
-                          ...prev,
-                          fileUrl: reader.result as string,
-                          fileNama: file.name,
-                          fileUkuran: formatFileSize(file.size),
-                          fileTipe: detectFileType(file.name)
-                        }));
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <div className="flex flex-col items-center pointer-events-none">
-                    <FolderOpen className="w-8 h-8 text-blue-600 mb-1" />
-                    <p className="text-xs font-semibold text-slate-800">
-                      Klik atau seret file dokumen ke sini untuk mengunggah
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      PDF, DOCX, XLSX, PPTX, JPG, PNG (Maksimal 15 MB)
-                    </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* File / Archive Uploader (ZIP, RAR, PDF, DOCX, etc.) */}
+                  <div className="relative border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-lg p-3.5 text-center bg-white transition-colors">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.webp,.txt,.zip,.rar,.7z,.tar,.gz"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const detected = detectFileType(file.name);
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setFormData(prev => ({
+                            ...prev,
+                            fileUrl: reader.result as string,
+                            fileNama: file.name,
+                            fileUkuran: formatFileSize(file.size),
+                            fileTipe: detected
+                          }));
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="flex flex-col items-center pointer-events-none">
+                      <Archive className="w-6 h-6 text-blue-600 mb-1" />
+                      <p className="text-xs font-semibold text-slate-800">
+                        Upload File / Arsip (ZIP, RAR, PDF, Dokumen)
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        Maksimal 25 MB per berkas
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Folder Directory Uploader */}
+                  <div className="relative border-2 border-dashed border-indigo-300 hover:border-indigo-500 rounded-lg p-3.5 text-center bg-white transition-colors">
+                    <input
+                      type="file"
+                      // @ts-expect-error webkitdirectory is standard in modern browsers for folder selection
+                      webkitdirectory=""
+                      directory=""
+                      multiple
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (!files || files.length === 0) return;
+                        let totalBytes = 0;
+                        for (let i = 0; i < files.length; i++) {
+                          totalBytes += files[i].size;
+                        }
+                        const firstFile = files[0];
+                        const folderName = firstFile.webkitRelativePath
+                          ? firstFile.webkitRelativePath.split('/')[0]
+                          : 'Paket_Arsip_Folder';
+
+                        // Read first file or package reference
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setFormData(prev => ({
+                            ...prev,
+                            fileUrl: reader.result as string,
+                            fileNama: `${folderName}.zip`,
+                            fileUkuran: formatFileSize(totalBytes),
+                            fileTipe: 'Folder',
+                            isiRingkasan: prev.isiRingkasan || `Paket direktori folder "${folderName}" berisi ${files.length} berkas dokumen sekolah.`
+                          }));
+                        };
+                        reader.readAsDataURL(firstFile);
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="flex flex-col items-center pointer-events-none">
+                      <FolderOpen className="w-6 h-6 text-indigo-600 mb-1" />
+                      <p className="text-xs font-semibold text-slate-800">
+                        Pilih & Simpan Satu Folder Penuh
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        Otomatis dipaketkan sebagai berkas arsip direktori
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 {formData.fileNama && (
                   <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg text-xs">
                     <div className="flex items-center gap-2 overflow-hidden">
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 font-bold font-mono rounded text-[11px] shrink-0">
+                      <span className={`px-2 py-0.5 font-bold font-mono rounded text-[11px] shrink-0 ${
+                        ['ZIP', 'RAR', 'Folder'].includes(formData.fileTipe || '')
+                          ? 'bg-indigo-50 text-indigo-700'
+                          : 'bg-blue-50 text-blue-700'
+                      }`}>
                         {formData.fileTipe || 'FILE'}
                       </span>
                       <span className="truncate font-medium text-slate-800">{formData.fileNama}</span>
@@ -787,6 +844,9 @@ ${doc.isiRingkasan}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-semibold"
                   >
                     <option value="PDF">PDF (.pdf)</option>
+                    <option value="ZIP">ZIP (.zip / Paket Arsip)</option>
+                    <option value="RAR">RAR (.rar / Kompresi)</option>
+                    <option value="Folder">Folder Berkas (Direktori Arsip)</option>
                     <option value="DOCX">DOCX (.docx / .doc)</option>
                     <option value="XLSX">XLSX (.xlsx / .xls)</option>
                     <option value="PPTX">PPTX (.pptx / .ppt)</option>

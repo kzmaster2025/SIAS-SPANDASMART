@@ -13,6 +13,21 @@ export type StandardTab =
 
 export type ActiveTab = StandardTab | (string & {});
 
+export type UserRole = 'admin' | 'gtk' | 'tamu';
+
+export interface UserSession {
+  role: UserRole;
+  gtkId?: string;
+  nama: string;
+  nip?: string;
+  nuptk?: string;
+  email?: string;
+  jabatan?: string;
+  mapel?: string;
+  kategori?: 'Pendidik' | 'Tenaga Kependidikan';
+  loginAt: string;
+}
+
 export interface CustomMenu {
   id: string; // e.g. "menu-galeri-kegiatan"
   label: string; // e.g. "Galeri Video & Kegiatan"

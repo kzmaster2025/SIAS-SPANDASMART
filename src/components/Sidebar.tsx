@@ -1,5 +1,4 @@
-import React from 'react';
-import { ActiveTab, ProfilSekolahData, CustomMenu } from '../types';
+import { ActiveTab, ProfilSekolahData, CustomMenu, UserSession } from '../types';
 import { getCustomMenuIcon } from '../utils/customIconHelper';
 import {
   LayoutDashboard,
@@ -18,7 +17,8 @@ import {
   ShieldCheck,
   Edit3,
   Plus,
-  Settings
+  Settings,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,7 +28,8 @@ interface SidebarProps {
   setIsOpenMobile: (open: boolean) => void;
   profil: ProfilSekolahData;
   isAdmin: boolean;
-  onOpenLogin: () => void;
+  currentUser?: UserSession;
+  onOpenLogin: (tab?: 'gtk' | 'admin') => void;
   onLogout: () => void;
   onOpenEditProfil: () => void;
   customMenus: CustomMenu[];
@@ -43,6 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setIsOpenMobile,
   profil,
   isAdmin,
+  currentUser,
   onOpenLogin,
   onLogout,
   onOpenEditProfil,
@@ -50,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAddCustomMenu,
   onOpenEditCustomMenu
 }) => {
+  const isGtkLoggedIn = currentUser?.role === 'gtk';
   const menuItems = [
     { id: 'dashboard' as ActiveTab, label: 'Dashboard Utama', icon: LayoutDashboard, adminOnly: false },
     { id: 'profil' as ActiveTab, label: 'Profil Sekolah & Fasilitas', icon: School, adminOnly: false },
@@ -226,7 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Footer Meta & Admin Mode Switch */}
+        {/* Footer Meta & Admin/GTK Mode Switch */}
         <div className="p-3.5 border-t border-slate-100 bg-slate-50/80 space-y-2">
           {isAdmin ? (
             <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs">
@@ -243,7 +246,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Edit3 className="w-3 h-3" />
                 </button>
               </div>
-              <p className="text-[10px] text-emerald-700 mt-1">Hak akses penuh aktif.</p>
+              <p className="text-[10px] text-emerald-700 mt-1">Hak akses penuh administrator aktif.</p>
               <button
                 onClick={onLogout}
                 className="mt-2 w-full py-1 text-[11px] font-semibold text-rose-700 hover:text-rose-800 hover:bg-rose-50 rounded border border-rose-200 transition-colors cursor-pointer"
@@ -251,14 +254,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Kunci / Keluar Admin
               </button>
             </div>
+          ) : isGtkLoggedIn ? (
+            /* Active GTK Session Card in Sidebar */
+            <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-blue-900 font-bold">
+                  <GraduationCap className="w-4 h-4 text-blue-700" />
+                  <span>Sesi GTK Aktif</span>
+                </div>
+                <span className="text-[10px] font-mono text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded font-semibold">
+                  {currentUser?.kategori || 'GTK'}
+                </span>
+              </div>
+              <p className="font-semibold text-slate-900 truncate mt-1">
+                {currentUser?.nama}
+              </p>
+              <p className="text-[10px] text-slate-500 font-mono truncate">
+                {currentUser?.nip && currentUser.nip !== '-' ? `NIP: ${currentUser.nip}` : currentUser?.jabatan || 'Pendidik SMPN 2'}
+              </p>
+              <p className="text-[10px] text-emerald-700 font-medium pt-0.5">
+                ✓ Akses Input Nilai, Dokumen & Presensi
+              </p>
+              <button
+                onClick={onLogout}
+                className="mt-2 w-full py-1 text-[11px] font-semibold text-rose-700 hover:text-rose-800 hover:bg-rose-50 rounded border border-rose-200 transition-colors cursor-pointer"
+              >
+                Keluar Akun GTK
+              </button>
+            </div>
           ) : (
-            <button
-              onClick={onOpenLogin}
-              className="w-full py-2 px-3 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Lock className="w-3.5 h-3.5 text-blue-700" />
-              <span>Buka Menu Admin</span>
-            </button>
+            /* Dual Login Options */
+            <div className="space-y-1.5">
+              <button
+                onClick={() => onOpenLogin('gtk')}
+                className="w-full py-2 px-3 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <GraduationCap className="w-4 h-4 text-blue-700" />
+                <span>Login Khusus GTK</span>
+              </button>
+              <button
+                onClick={() => onOpenLogin('admin')}
+                className="w-full py-1.5 px-3 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <Lock className="w-3 h-3 text-slate-500" />
+                <span>Login Admin Sistem</span>
+              </button>
+            </div>
           )}
 
           <div className="text-[10px] text-slate-400 px-1 pt-1 flex items-center justify-between">

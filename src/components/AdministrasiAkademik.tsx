@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Siswa, RaporSiswa, NilaiMapel, CapaianKokurikuler, PredikatKokurikuler } from '../types';
+import { Siswa, RaporSiswa, NilaiMapel, CapaianKokurikuler, PredikatKokurikuler, GuruTendik } from '../types';
 import { MOCK_RAPOR_CONTOH, RAPOR_ADELIA } from '../data/mockData';
 import { DELAPAN_DIMENSI_PROFIL_LULUSAN, getDefaultKokurikuler } from '../data/dimensiProfilLulusan';
+import { getGradeFromSiswa, applyAutoGuruToNilai, getAllGuruOptions, matchGuruForMapel, formatGuruFullName } from '../utils/guruMapelHelper';
 import { InputRaporModal } from './InputRaporModal';
 import {
   BookOpen,
@@ -24,6 +25,7 @@ import {
 
 interface AdministrasiAkademikProps {
   siswaList: Siswa[];
+  guruList?: GuruTendik[];
   onPrintRapor: (rapor: RaporSiswa, siswa: Siswa) => void;
   isAdmin?: boolean;
   onOpenAdminLogin?: () => void;
@@ -33,6 +35,7 @@ interface AdministrasiAkademikProps {
 
 export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
   siswaList,
+  guruList = [],
   onPrintRapor,
   isAdmin = false,
   onOpenAdminLogin,
@@ -45,15 +48,29 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
   const [inputModalTab, setInputModalTab] = useState<'mapel' | 'kokurikuler' | 'ekskul'>('mapel');
   const [showSaveToast, setShowSaveToast] = useState(false);
 
-  // Active student's rapor
+  const [autoGuruToast, setAutoGuruToast] = useState<string | null>(null);
+
+  // Active student's rapor & grade
   const selectedSiswa = siswaList.find(s => s.id === selectedSiswaId) || siswaList[0];
+  const currentGrade = getGradeFromSiswa(selectedSiswa);
 
   // Helper to get or generate initial student rapor
   const getInitialRapor = (siswaId: string): RaporSiswa => {
+    const s = siswaList.find(x => x.id === siswaId);
+    const grade = getGradeFromSiswa(s);
+
     if (raporStore && raporStore[siswaId]) {
       const stored = raporStore[siswaId];
+      let storedNilai = stored.nilai || [];
+      if (guruList && guruList.length > 0) {
+        const hasUnset = storedNilai.some(n => !n.guruPengampu || n.guruPengampu === 'Guru Pengampu');
+        if (hasUnset) {
+          storedNilai = applyAutoGuruToNilai(storedNilai, grade, guruList).updatedNilai;
+        }
+      }
       return {
         ...stored,
+        nilai: storedNilai,
         kokurikuler:
           stored.kokurikuler && stored.kokurikuler.length === 8
             ? stored.kokurikuler
@@ -61,12 +78,21 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
       };
     }
     if (siswaId === 'sis-10') {
-      return RAPOR_ADELIA;
+      const base = { ...RAPOR_ADELIA };
+      if (guruList && guruList.length > 0) {
+        base.nilai = applyAutoGuruToNilai(base.nilai, grade, guruList).updatedNilai;
+      }
+      return base;
     }
-    // Default clone of mock template
+    // Default clone of mock template with auto mapped teachers for this grade
+    let initialNilai = MOCK_RAPOR_CONTOH.nilai;
+    if (guruList && guruList.length > 0) {
+      initialNilai = applyAutoGuruToNilai(initialNilai, grade, guruList).updatedNilai;
+    }
     return {
       ...MOCK_RAPOR_CONTOH,
       siswaId: siswaId,
+      nilai: initialNilai,
       kokurikuler: getDefaultKokurikuler()
     };
   };
@@ -84,7 +110,28 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
     } else if (!hasUnsavedChanges) {
       setCurrentRapor(getInitialRapor(selectedSiswaId));
     }
-  }, [selectedSiswaId, raporStore]);
+  }, [selectedSiswaId, raporStore, guruList]);
+
+  const handleAutoSyncGuruFromGTK = () => {
+    if (!isAdmin) {
+      onOpenAdminLogin?.();
+      return;
+    }
+    if (!guruList || guruList.length === 0) {
+      setAutoGuruToast('Data GTK belum tersedia atau belum diimpor.');
+      setTimeout(() => setAutoGuruToast(null), 3000);
+      return;
+    }
+
+    const { updatedNilai, countMatched } = applyAutoGuruToNilai(currentRapor.nilai, currentGrade, guruList);
+    setCurrentRapor(prev => ({
+      ...prev,
+      nilai: updatedNilai
+    }));
+    setHasUnsavedChanges(true);
+    setAutoGuruToast(`Berhasil mencocokkan ${countMatched} nama guru pengampu dari data GTK Kelas ${currentGrade}!`);
+    setTimeout(() => setAutoGuruToast(null), 3500);
+  };
 
   const handleUpdateNilai = (index: number, field: keyof NilaiMapel, value: any) => {
     if (!isAdmin) return;
@@ -287,6 +334,14 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
         </div>
       )}
 
+      {/* Auto Guru GTK Alert Banner */}
+      {autoGuruToast && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+          <Sparkles className="w-4 h-4 text-blue-700 shrink-0" />
+          <span>{autoGuruToast}</span>
+        </div>
+      )}
+
       {/* Selector & Tabs */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -382,7 +437,19 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
               </div>
 
               {isAdmin && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {guruList && guruList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleAutoSyncGuruFromGTK}
+                      className="px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                      title={`Otomatiskan nama guru pengampu berdasarkan data GTK yang diimpor untuk Kelas ${currentGrade}`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Otomatiskan Guru GTK (Kelas {currentGrade})</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={handleAddMapelInline}
@@ -436,12 +503,33 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
                       </td>
                       <td className="py-3 px-4 text-slate-600 whitespace-nowrap text-[11px]">
                         {isAdmin ? (
-                          <input
-                            type="text"
-                            value={n.guruPengampu}
-                            onChange={(e) => handleUpdateNilai(idx, 'guruPengampu', e.target.value)}
-                            className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-slate-700 focus:bg-white text-[11px] w-full max-w-[180px]"
-                          />
+                          <div className="space-y-1">
+                            <input
+                              type="text"
+                              list="akademik-guru-gtk-datalist"
+                              value={n.guruPengampu}
+                              onChange={(e) => handleUpdateNilai(idx, 'guruPengampu', e.target.value)}
+                              className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-slate-700 focus:bg-white text-[11px] w-full min-w-[180px]"
+                              placeholder="Pilih / ketik guru pengampu..."
+                            />
+                            {(() => {
+                              const suggested = matchGuruForMapel(n.namaMapel, currentGrade, guruList);
+                              const suggestedName = suggested ? formatGuruFullName(suggested) : null;
+                              if (suggestedName && suggestedName !== n.guruPengampu) {
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateNilai(idx, 'guruPengampu', suggestedName)}
+                                    className="text-[10px] text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 block text-left truncate max-w-[180px] cursor-pointer"
+                                    title={`Klik untuk menerapkan guru GTK: ${suggestedName}`}
+                                  >
+                                    ⚡ Terapkan: {suggestedName}
+                                  </button>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
                         ) : (
                           n.guruPengampu
                         )}
@@ -800,7 +888,17 @@ export const AdministrasiAkademik: React.FC<AdministrasiAkademikProps> = ({
         existingRapor={currentRapor}
         onSaveRapor={handleModalSave}
         initialTab={inputModalTab}
+        guruList={guruList}
       />
+
+      {/* Datalist Guru dari Data GTK yang Diimpor */}
+      <datalist id="akademik-guru-gtk-datalist">
+        {getAllGuruOptions(guruList).map(g => (
+          <option key={g.id} value={g.namaLengkap}>
+            {g.namaLengkap} ({g.mapel || g.jabatan || 'GTK SMPN 2'})
+          </option>
+        ))}
+      </datalist>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Siswa, RaporSiswa, NilaiMapel, CapaianKokurikuler, PredikatKokurikuler } from '../types';
+import { Siswa, RaporSiswa, NilaiMapel, CapaianKokurikuler, PredikatKokurikuler, GuruTendik } from '../types';
 import { DELAPAN_DIMENSI_PROFIL_LULUSAN, getDefaultKokurikuler } from '../data/dimensiProfilLulusan';
+import { getGradeFromSiswa, applyAutoGuruToNilai, getAllGuruOptions, matchGuruForMapel, formatGuruFullName } from '../utils/guruMapelHelper';
 import {
   X,
   Save,
@@ -24,6 +25,7 @@ interface InputRaporModalProps {
   existingRapor: RaporSiswa | null;
   onSaveRapor: (rapor: RaporSiswa) => void;
   initialTab?: 'mapel' | 'kokurikuler' | 'ekskul';
+  guruList?: GuruTendik[];
 }
 
 const DEFAULT_MAPEL_TEMPLATES: NilaiMapel[] = [
@@ -136,7 +138,8 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
   currentSiswaId,
   existingRapor,
   onSaveRapor,
-  initialTab = 'mapel'
+  initialTab = 'mapel',
+  guruList = []
 }) => {
   const [modalTab, setModalTab] = useState<'mapel' | 'kokurikuler' | 'ekskul'>(initialTab);
   const [targetSiswaId, setTargetSiswaId] = useState<string>(currentSiswaId || siswaList[0]?.id || '');
@@ -150,6 +153,9 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
   const [ekskulList, setEkskulList] = useState<{ nama: string; predikat: 'Sangat Baik' | 'Baik' | 'Cukup'; keterangan: string }[]>([]);
   const [showToast, setShowToast] = useState(false);
 
+  const currentSiswa = siswaList.find(s => s.id === targetSiswaId) || siswaList[0];
+  const targetGrade = getGradeFromSiswa(currentSiswa);
+
   // Sync state on open or change
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -158,7 +164,15 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
     if (existingRapor) {
       setSemester(existingRapor.semester);
       setTahunAjaran(existingRapor.tahunAjaran);
-      setNilaiList(existingRapor.nilai && existingRapor.nilai.length > 0 ? [...existingRapor.nilai] : [...DEFAULT_MAPEL_TEMPLATES]);
+      let initialNilai = existingRapor.nilai && existingRapor.nilai.length > 0 ? [...existingRapor.nilai] : [...DEFAULT_MAPEL_TEMPLATES];
+      // Auto-populate teachers if empty/placeholder
+      if (guruList && guruList.length > 0) {
+        const hasPlaceholderTeachers = initialNilai.some(n => !n.guruPengampu || n.guruPengampu === 'Guru Pengampu');
+        if (hasPlaceholderTeachers) {
+          initialNilai = applyAutoGuruToNilai(initialNilai, targetGrade, guruList).updatedNilai;
+        }
+      }
+      setNilaiList(initialNilai);
       setKokurikulerList(
         existingRapor.kokurikuler && existingRapor.kokurikuler.length === 8
           ? [...existingRapor.kokurikuler]
@@ -170,7 +184,11 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
         { nama: 'Pramuka Penggalang', predikat: 'Sangat Baik', keterangan: 'Aktif mengikuti kegiatan kepanduan' }
       ]);
     } else {
-      setNilaiList([...DEFAULT_MAPEL_TEMPLATES]);
+      let initialNilai = [...DEFAULT_MAPEL_TEMPLATES];
+      if (guruList && guruList.length > 0) {
+        initialNilai = applyAutoGuruToNilai(initialNilai, targetGrade, guruList).updatedNilai;
+      }
+      setNilaiList(initialNilai);
       setKokurikulerList(getDefaultKokurikuler());
       setKehadiran({ sakit: 1, izin: 0, alpa: 0 });
       setCatatanWaliKelas('Menunjukkan kesungguhan dan antusiasme tinggi dalam pembelajaran berbasis projek (P5). Terus tingkatkan kemampuan kolaborasi.');
@@ -179,7 +197,7 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
         { nama: 'Palang Merah Remaja (PMR)', predikat: 'Baik', keterangan: 'Siaga dan peduli sosial' }
       ]);
     }
-  }, [existingRapor, targetSiswaId, isOpen]);
+  }, [existingRapor, targetSiswaId, isOpen, targetGrade, guruList]);
 
   useEffect(() => {
     if (currentSiswaId) {
@@ -189,7 +207,11 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentSiswa = siswaList.find(s => s.id === targetSiswaId) || siswaList[0];
+  const handleAutoSyncGuruGTK = () => {
+    if (!guruList || guruList.length === 0) return;
+    const { updatedNilai } = applyAutoGuruToNilai(nilaiList, targetGrade, guruList);
+    setNilaiList(updatedNilai);
+  };
 
   const handleNilaiChange = (index: number, field: keyof NilaiMapel, val: any) => {
     const updated = [...nilaiList];
@@ -516,21 +538,34 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
           {/* TAB 2: NILAI MAPEL */}
           {modalTab === 'mapel' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm">
                     Nilai Formatif, Sumatif & Capaian Kompetensi ({nilaiList.length} Mapel)
                   </h4>
                   <p className="text-slate-500">Nilai Akhir dihitung otomatis: (Formatif + Sumatif) / 2</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAddMapel}
-                  className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold rounded-lg inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Tambah Mata Pelajaran</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {guruList && guruList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleAutoSyncGuruGTK}
+                      className="px-3 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-semibold rounded-lg inline-flex items-center gap-1.5 cursor-pointer border border-emerald-300 shadow-2xs text-xs"
+                      title={`Cocokkan nama guru pengampu otomatis dari data GTK untuk Kelas ${targetGrade}`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Otomatiskan Guru GTK (Kelas {targetGrade})</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleAddMapel}
+                    className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold rounded-lg inline-flex items-center gap-1.5 cursor-pointer text-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tambah Mata Pelajaran</span>
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto border border-slate-200 rounded-xl">
@@ -562,10 +597,11 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
                         <td className="py-2 px-3">
                           <input
                             type="text"
+                            list="modal-guru-gtk-datalist"
                             value={m.guruPengampu}
                             onChange={(e) => handleNilaiChange(idx, 'guruPengampu', e.target.value)}
                             className="w-full px-2 py-1 rounded border border-slate-200 bg-white text-[11px]"
-                            placeholder="Nama Guru"
+                            placeholder="Pilih / ketik guru pengampu..."
                           />
                         </td>
                         <td className="py-2 px-2 text-center">
@@ -789,6 +825,15 @@ export const InputRaporModal: React.FC<InputRaporModalProps> = ({
             <span>Nilai Rapor & 8 Dimensi Profil Lulusan Berhasil Disimpan!</span>
           </div>
         )}
+
+        {/* Datalist Guru dari Data GTK yang Diimpor */}
+        <datalist id="modal-guru-gtk-datalist">
+          {getAllGuruOptions(guruList).map(g => (
+            <option key={g.id} value={g.namaLengkap}>
+              {g.namaLengkap} ({g.mapel || g.jabatan || 'GTK SMPN 2'})
+            </option>
+          ))}
+        </datalist>
       </div>
     </div>
   );

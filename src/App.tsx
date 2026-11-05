@@ -15,7 +15,8 @@ import {
   DokumenSekolah,
   ProfilSekolahData,
   CustomMenu,
-  CustomMenuItem
+  CustomMenuItem,
+  UserSession
 } from './types';
 import {
   INITIAL_SISWA,
@@ -110,14 +111,30 @@ export default function App() {
     return PROFIL_SEKOLAH as unknown as ProfilSekolahData;
   });
 
-  // Admin Authentication State
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+  // User Authentication & GTK Session State
+  const [currentUser, setCurrentUser] = useState<UserSession>(() => {
     try {
-      return localStorage.getItem('sias_is_admin') === 'true';
-    } catch {
-      return false;
-    }
+      const saved = localStorage.getItem('sias_user_session');
+      if (saved) return JSON.parse(saved);
+      if (localStorage.getItem('sias_is_admin') === 'true') {
+        return {
+          role: 'admin',
+          nama: 'Administrator SIAS Digital',
+          jabatan: 'Kepala Tata Usaha / Admin Sistem',
+          loginAt: new Date().toISOString()
+        };
+      }
+    } catch {}
+    return {
+      role: 'tamu',
+      nama: 'Tamu / Pengunjung',
+      loginAt: new Date().toISOString()
+    };
   });
+
+  const isAdmin = currentUser.role === 'admin';
+  const isGTK = currentUser.role === 'gtk';
+  const canEdit = currentUser.role === 'admin' || currentUser.role === 'gtk';
 
   const [adminPassword, setAdminPassword] = useState<string>(() => {
     try {
@@ -129,6 +146,7 @@ export default function App() {
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState<'login' | 'change_password'>('login');
+  const [loginModalTab, setLoginModalTab] = useState<'gtk' | 'admin'>('gtk');
   const [isEditProfilModalOpen, setIsEditProfilModalOpen] = useState(false);
 
   // Core Data Stores
@@ -242,19 +260,30 @@ export default function App() {
   const [selectedDokumenForPreview, setSelectedDokumenForPreview] = useState<DokumenSekolah | null>(null);
 
   // Auth Handlers
-  const handleSuccessLogin = () => {
-    setIsAdmin(true);
+  const handleSuccessLogin = (session: UserSession) => {
+    setCurrentUser(session);
     try {
-      localStorage.setItem('sias_is_admin', 'true');
+      localStorage.setItem('sias_user_session', JSON.stringify(session));
+      if (session.role === 'admin') {
+        localStorage.setItem('sias_is_admin', 'true');
+      } else {
+        localStorage.removeItem('sias_is_admin');
+      }
     } catch (e) {
       console.warn(e);
     }
   };
 
   const handleLogout = () => {
-    setIsAdmin(false);
+    const guest: UserSession = {
+      role: 'tamu',
+      nama: 'Tamu / Pengunjung',
+      loginAt: new Date().toISOString()
+    };
+    setCurrentUser(guest);
     try {
-      localStorage.setItem('sias_is_admin', 'false');
+      localStorage.removeItem('sias_user_session');
+      localStorage.removeItem('sias_is_admin');
     } catch (e) {
       console.warn(e);
     }
@@ -411,7 +440,8 @@ export default function App() {
   };
 
   const handleSaveRapor = async (rapor: RaporSiswa) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -432,7 +462,8 @@ export default function App() {
     tanggal: string,
     data: { status: Record<string, 'H' | 'S' | 'I' | 'A'>; keterangan: Record<string, string> }
   ) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -646,7 +677,8 @@ export default function App() {
 
   // Dokumen Handlers
   const handleAddDokumen = async (docItem: DokumenSekolah) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -656,7 +688,8 @@ export default function App() {
   };
 
   const handleUpdateDokumen = async (docItem: DokumenSekolah) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -666,7 +699,8 @@ export default function App() {
   };
 
   const handleDeleteDokumen = async (id: string) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -765,7 +799,8 @@ export default function App() {
 
   // Agenda Handlers
   const handleAddAgenda = async (ag: AgendaSekolah) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -783,7 +818,8 @@ export default function App() {
   };
 
   const handleUpdateAgenda = async (ag: AgendaSekolah) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -801,7 +837,8 @@ export default function App() {
   };
 
   const handleDeleteAgenda = async (id: string) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -874,7 +911,8 @@ export default function App() {
   };
 
   const handleSaveCustomItem = async (item: CustomMenuItem) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -893,7 +931,8 @@ export default function App() {
   };
 
   const handleDeleteCustomItem = async (id: string) => {
-    if (!isAdmin) {
+    if (!canEdit) {
+      setLoginModalTab('gtk');
       setLoginModalMode('login');
       setIsLoginModalOpen(true);
       return;
@@ -939,7 +978,9 @@ export default function App() {
         }}
         profil={profilSekolah}
         isAdmin={isAdmin}
-        onOpenLogin={() => {
+        currentUser={currentUser}
+        onOpenLogin={(tab = 'gtk') => {
+          setLoginModalTab(tab);
           setLoginModalMode('login');
           setIsLoginModalOpen(true);
         }}
@@ -961,7 +1002,9 @@ export default function App() {
           setIsOpenMobile={setIsOpenMobile}
           profil={profilSekolah}
           isAdmin={isAdmin}
-          onOpenLogin={() => {
+          currentUser={currentUser}
+          onOpenLogin={(tab = 'gtk') => {
+            setLoginModalTab(tab);
             setLoginModalMode('login');
             setIsLoginModalOpen(true);
           }}
@@ -1069,9 +1112,11 @@ export default function App() {
           {activeTab === 'akademik' && (
             <AdministrasiAkademik
               siswaList={siswaList}
+              guruList={guruList}
               onPrintRapor={(rapor, siswa) => setSelectedRaporForPrint({ rapor, siswa })}
-              isAdmin={isAdmin}
+              isAdmin={canEdit}
               onOpenAdminLogin={() => {
+                setLoginModalTab('gtk');
                 setLoginModalMode('login');
                 setIsLoginModalOpen(true);
               }}
@@ -1083,8 +1128,9 @@ export default function App() {
           {activeTab === 'presensi' && (
             <AdministrasiPresensi
               siswaList={siswaList}
-              isAdmin={isAdmin}
+              isAdmin={canEdit}
               onOpenAdminLogin={() => {
+                setLoginModalTab('gtk');
                 setLoginModalMode('login');
                 setIsLoginModalOpen(true);
               }}
@@ -1102,8 +1148,9 @@ export default function App() {
               onUpdateSurat={handleUpdateSurat}
               onDeleteSurat={handleDeleteSurat}
               onPrintSurat={(surat) => setSelectedSuratForPrint(surat)}
-              isAdmin={isAdmin}
+              isAdmin={canEdit}
               onOpenAdminLogin={() => {
+                setLoginModalTab('gtk');
                 setLoginModalMode('login');
                 setIsLoginModalOpen(true);
               }}
@@ -1119,8 +1166,9 @@ export default function App() {
               onPreviewDokumen={(doc) => setSelectedDokumenForPreview(doc)}
               onNavigateToDrive={() => setActiveTab('drive')}
               onUploadToDrive={() => setActiveTab('drive')}
-              isAdmin={isAdmin}
+              isAdmin={canEdit}
               onOpenAdminLogin={() => {
+                setLoginModalTab('gtk');
                 setLoginModalMode('login');
                 setIsLoginModalOpen(true);
               }}
@@ -1141,6 +1189,7 @@ export default function App() {
               onClearAllTransaksi={handleClearAllTransaksi}
               isAdmin={isAdmin}
               onOpenAdminLogin={() => {
+                setLoginModalTab('admin');
                 setLoginModalMode('login');
                 setIsLoginModalOpen(true);
               }}
@@ -1153,8 +1202,9 @@ export default function App() {
               onAddAgenda={handleAddAgenda}
               onUpdateAgenda={handleUpdateAgenda}
               onDeleteAgenda={handleDeleteAgenda}
-              isAdmin={isAdmin}
+              isAdmin={canEdit}
               onOpenAdminLogin={() => {
+                setLoginModalTab('gtk');
                 setLoginModalMode('login');
                 setIsLoginModalOpen(true);
               }}
@@ -1169,7 +1219,7 @@ export default function App() {
               <CustomMenuPage
                 menu={activeCustom}
                 items={customMenuItems}
-                isAdmin={isAdmin}
+                isAdmin={canEdit}
                 onOpenEditMenu={(menu) => {
                   setEditingCustomMenu(menu);
                   setIsCustomMenuModalOpen(true);
@@ -1186,6 +1236,7 @@ export default function App() {
                 }}
                 onDeleteItem={handleDeleteCustomItem}
                 onOpenAdminLogin={() => {
+                  setLoginModalTab('gtk');
                   setLoginModalMode('login');
                   setIsLoginModalOpen(true);
                 }}
@@ -1219,7 +1270,7 @@ export default function App() {
         onDeleteItem={handleDeleteCustomItem}
       />
 
-      {/* Admin Modals */}
+      {/* Admin & GTK Login Modal */}
       <AdminLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
@@ -1227,6 +1278,8 @@ export default function App() {
         currentPassword={adminPassword}
         onUpdatePassword={handleUpdatePassword}
         initialMode={loginModalMode}
+        initialTab={loginModalTab}
+        guruList={guruList}
       />
 
       <EditProfilModal
